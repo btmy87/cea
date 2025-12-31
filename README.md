@@ -1,5 +1,6 @@
 [![Build and docs](https://github.com/nasa/cea/actions/workflows/docs.yml/badge.svg)](https://github.com/nasa/cea/actions/workflows/docs.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![Release](https://img.shields.io/github/release/nasa/cea.svg)
 
 # CEA (Chemical Equilibrium with Applications)
 <img src="docs/source/images/logo.png" alt="CEA logo" width="200">
