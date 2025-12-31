@@ -2,11 +2,14 @@ __version__ = "3.0.0"
 
 # initialize libcea, loading in the default data files
 from cea.lib.libcea import init as libcea_init
+import os as _os
 
-libcea_init()
+if not _os.environ.get("CEA_SKIP_INIT"):
+    libcea_init()
 
 # cleanup the root namespace
 del libcea_init
+del _os
 
 # expose all public methods in the library to the root package.
 from cea.lib.libcea import *

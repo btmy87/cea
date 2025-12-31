@@ -35,6 +35,8 @@ jobs:
         run: doxygen Doxyfile
 
       - name: Build Sphinx HTML
+        env:
+          CEA_SKIP_INIT: "1"
         run: |
           cd docs
           make html

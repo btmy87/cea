@@ -12,6 +12,9 @@ import sys
 from docutils import nodes
 from sphinx.directives import ObjectDescription
 
+# Avoid initializing the native library during docs builds.
+os.environ.setdefault("CEA_SKIP_INIT", "1")
+
 sys.path.insert(0, os.path.abspath("../../source/bind/python/"))
 import cea
 
