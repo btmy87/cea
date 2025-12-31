@@ -13,36 +13,161 @@ module cea_bindc
 
 
     !-----------------------------------------------------------------
-    ! Enumerations (defined in cea_enum.h)
+    ! Enumerations (mirror source/bind/c/cea_enum.h)
     !-----------------------------------------------------------------
     enum, bind(c)
-        enumerator :: CEA_EQUILIBRIUM_TYPE_ENUM
+        enumerator :: CEA_TP = 0
+        enumerator :: CEA_HP = 1
+        enumerator :: CEA_SP = 2
+        enumerator :: CEA_TV = 3
+        enumerator :: CEA_UV = 4
+        enumerator :: CEA_SV = 5
     end enum
 
     enum, bind(c)
-        enumerator :: CEA_EQUILIBRIUM_SIZE_ENUM
+        enumerator :: CEA_NUM_REACTANTS = 0
+        enumerator :: CEA_NUM_PRODUCTS = 1
+        enumerator :: CEA_NUM_GAS = 2
+        enumerator :: CEA_NUM_CONDENSED = 3
+        enumerator :: CEA_NUM_ELEMENTS = 4
+        enumerator :: CEA_MAX_EQUATIONS = 5
     end enum
 
     enum, bind(c)
-        enumerator :: CEA_PROPERTY_TYPE_ENUM
+        enumerator :: CEA_TEMPERATURE = 0
+        enumerator :: CEA_PRESSURE = 1
+        enumerator :: CEA_VOLUME = 2
+        enumerator :: CEA_DENSITY = 3
+        enumerator :: CEA_M = 4
+        enumerator :: CEA_MW = 5
+        enumerator :: CEA_ENTHALPY = 6
+        enumerator :: CEA_ENERGY = 7
+        enumerator :: CEA_ENTROPY = 8
+        enumerator :: CEA_GIBBS_ENERGY = 9
+        enumerator :: CEA_GAMMA_S = 10
+        enumerator :: CEA_FROZEN_CP = 11
+        enumerator :: CEA_FROZEN_CV = 12
+        enumerator :: CEA_EQUILIBRIUM_CP = 13
+        enumerator :: CEA_EQUILIBRIUM_CV = 14
+        enumerator :: CEA_VISCOSITY = 15
+        enumerator :: CEA_FROZEN_CONDUCTIVITY = 16
+        enumerator :: CEA_EQUILIBRIUM_CONDUCTIVITY = 17
+        enumerator :: CEA_FROZEN_PRANDTL = 18
+        enumerator :: CEA_EQUILIBRIUM_PRANDTL = 19
     end enum
 
     enum, bind(c)
-        enumerator :: CEA_ROCKET_PROPERTY_TYPE_ENUM
+        enumerator :: CEA_ROCKET_TEMPERATURE = 0
+        enumerator :: CEA_ROCKET_PRESSURE = 1
+        enumerator :: CEA_ROCKET_VOLUME = 2
+        enumerator :: CEA_ROCKET_DENSITY = 3
+        enumerator :: CEA_ROCKET_M = 4
+        enumerator :: CEA_ROCKET_MW = 5
+        enumerator :: CEA_ROCKET_ENTHALPY = 6
+        enumerator :: CEA_ROCKET_ENERGY = 7
+        enumerator :: CEA_ROCKET_ENTROPY = 8
+        enumerator :: CEA_ROCKET_GIBBS_ENERGY = 9
+        enumerator :: CEA_ROCKET_GAMMA_S = 10
+        enumerator :: CEA_ROCKET_FROZEN_CP = 11
+        enumerator :: CEA_ROCKET_FROZEN_CV = 12
+        enumerator :: CEA_ROCKET_EQUILIBRIUM_CP = 13
+        enumerator :: CEA_ROCKET_EQUILIBRIUM_CV = 14
+        enumerator :: CEA_MACH = 15
+        enumerator :: CEA_SONIC_VELOCITY = 16
+        enumerator :: CEA_AE_AT = 17
+        enumerator :: CEA_C_STAR = 18
+        enumerator :: CEA_COEFFICIENT_OF_THRUST = 19
+        enumerator :: CEA_ISP = 20
+        enumerator :: CEA_ISP_VACUUM = 21
+        enumerator :: CEA_ROCKET_VISCOSITY = 22
+        enumerator :: CEA_ROCKET_FROZEN_CONDUCTIVITY = 23
+        enumerator :: CEA_ROCKET_EQUILIBRIUM_CONDUCTIVITY = 24
+        enumerator :: CEA_ROCKET_FROZEN_PRANDTL = 25
+        enumerator :: CEA_ROCKET_EQUILIBRIUM_PRANDTL = 26
     end enum
 
     enum, bind(c)
-        enumerator :: CEA_SHOCK_PROPERTY_TYPE_ENUM
+        enumerator :: CEA_SHOCK_TEMPERATURE = 0
+        enumerator :: CEA_SHOCK_PRESSURE = 1
+        enumerator :: CEA_SHOCK_VELOCITY = 2
+        enumerator :: CEA_SHOCK_MACH = 3
+        enumerator :: CEA_SHOCK_SONIC_VELOCITY = 4
+        enumerator :: CEA_SHOCK_RHO12 = 5
+        enumerator :: CEA_SHOCK_RHO52 = 6
+        enumerator :: CEA_SHOCK_P21 = 7
+        enumerator :: CEA_SHOCK_P52 = 8
+        enumerator :: CEA_SHOCK_T21 = 9
+        enumerator :: CEA_SHOCK_T52 = 10
+        enumerator :: CEA_SHOCK_M21 = 11
+        enumerator :: CEA_SHOCK_M52 = 12
+        enumerator :: CEA_SHOCK_V2 = 13
+        enumerator :: CEA_SHOCK_U5_P_V2 = 14
+        enumerator :: CEA_SHOCK_VOLUME = 15
+        enumerator :: CEA_SHOCK_DENSITY = 16
+        enumerator :: CEA_SHOCK_M = 17
+        enumerator :: CEA_SHOCK_MW = 18
+        enumerator :: CEA_SHOCK_ENTHALPY = 19
+        enumerator :: CEA_SHOCK_ENERGY = 20
+        enumerator :: CEA_SHOCK_ENTROPY = 21
+        enumerator :: CEA_SHOCK_GIBBS_ENERGY = 22
+        enumerator :: CEA_SHOCK_GAMMA_S = 23
+        enumerator :: CEA_SHOCK_FROZEN_CP = 24
+        enumerator :: CEA_SHOCK_FROZEN_CV = 25
+        enumerator :: CEA_SHOCK_EQUILIBRIUM_CP = 26
+        enumerator :: CEA_SHOCK_EQUILIBRIUM_CV = 27
+        enumerator :: CEA_SHOCK_VISCOSITY = 28
+        enumerator :: CEA_SHOCK_FROZEN_CONDUCTIVITY = 29
+        enumerator :: CEA_SHOCK_EQUILIBRIUM_CONDUCTIVITY = 30
+        enumerator :: CEA_SHOCK_FROZEN_PRANDTL = 31
+        enumerator :: CEA_SHOCK_EQUILIBRIUM_PRANDTL = 32
     end enum
 
     enum, bind(c)
-        enumerator :: CEA_DETONATION_PROPERTY_TYPE_ENUM
+        enumerator :: CEA_DETONATION_P1 = 0
+        enumerator :: CEA_DETONATION_T1 = 1
+        enumerator :: CEA_DETONATION_H1 = 2
+        enumerator :: CEA_DETONATION_M1 = 3
+        enumerator :: CEA_DETONATION_GAMMA1 = 4
+        enumerator :: CEA_DETONATION_V_SONIC1 = 5
+        enumerator :: CEA_DETONATION_PRESSURE = 6
+        enumerator :: CEA_DETONATION_TEMPERATURE = 7
+        enumerator :: CEA_DETONATION_DENSITY = 8
+        enumerator :: CEA_DETONATION_ENTHALPY = 9
+        enumerator :: CEA_DETONATION_ENERGY = 10
+        enumerator :: CEA_DETONATION_GIBBS_ENERGY = 11
+        enumerator :: CEA_DETONATION_ENTROPY = 12
+        enumerator :: CEA_DETONATION_MACH = 13
+        enumerator :: CEA_DETONATION_VELOCITY = 14
+        enumerator :: CEA_DETONATION_SONIC_VELOCITY = 15
+        enumerator :: CEA_DETONATION_GAMMA = 16
+        enumerator :: CEA_DETONATION_P_P1 = 17
+        enumerator :: CEA_DETONATION_T_T1 = 18
+        enumerator :: CEA_DETONATION_M_M1 = 19
+        enumerator :: CEA_DETONATION_RHO_RHO1 = 20
+        enumerator :: CEA_DETONATION_FROZEN_CP = 21
+        enumerator :: CEA_DETONATION_FROZEN_CV = 22
+        enumerator :: CEA_DETONATION_EQUILIBRIUM_CP = 23
+        enumerator :: CEA_DETONATION_EQUILIBRIUM_CV = 24
+        enumerator :: CEA_DETONATION_M = 25
+        enumerator :: CEA_DETONATION_MW = 26
+        enumerator :: CEA_DETONATION_VISCOSITY = 27
+        enumerator :: CEA_DETONATION_FROZEN_CONDUCTIVITY = 28
+        enumerator :: CEA_DETONATION_EQUILIBRIUM_CONDUCTIVITY = 29
+        enumerator :: CEA_DETONATION_FROZEN_PRANDTL = 30
+        enumerator :: CEA_DETONATION_EQUILIBRIUM_PRANDTL = 31
     end enum
 
     enum, bind(c)
-        enumerator :: CEA_ERROR_CODE_ENUM
+        enumerator :: CEA_SUCCESS = 0
+        enumerator :: CEA_INVALID_FILENAME = 1
+        enumerator :: CEA_INVALID_PROPERTY_TYPE = 2
+        enumerator :: CEA_INVALID_EQUILIBRIUM_TYPE = 3
+        enumerator :: CEA_INVALID_ROCKET_TYPE = 4
+        enumerator :: CEA_INVALID_EQUILIBRIUM_SIZE_TYPE = 5
+        enumerator :: CEA_INVALID_INDEX = 6
+        enumerator :: CEA_INVALID_SIZE = 7
+        enumerator :: CEA_NOT_CONVERGED = 8
     end enum
-
 
     !-----------------------------------------------------------------
     ! C Interop Helpers
