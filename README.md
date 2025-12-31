@@ -1,5 +1,9 @@
-# cea
-A modernized version of NASA's Chemical Equilibrium with Applications (EAR99)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+# CEA (Chemical Equilibrium with Applications)
+A modernized version of NASA's Chemical Equilibrium with Applications.
+
+Online documentation and examples at located at <https://nasa.github.io/cea/>
 
 ## Overview
 The NASA software package CEA (Chemical Equilibrium with Applications) enables
