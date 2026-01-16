@@ -144,6 +144,7 @@ contains
 
         ! Locals
         logical :: sort_condensed_
+        logical, allocatable :: found_db(:)
         integer :: i, j, k, ns
         character(enl), allocatable :: enames(:,:)
         character(:), allocatable :: slist(:), elist(:)
@@ -184,11 +185,28 @@ contains
 
         ! Populate the species data
         ns = size(slist)
+        if (ns == 0) then
+            call abort('mixture_init: empty species list')
+        end if
         allocate(self%species(ns))
+        allocate(found_db(ns))
         do i = 1,ns
-            self%species(i) = get_species(thermo, slist(i))
+            self%species(i) = get_species(thermo, slist(i), found_db(i))
+            if (.not. found_db(i)) then
+                self%species(i)%name = slist(i)
+                self%species(i)%i_phase = 0
+                self%species(i)%num_intervals = 0
+                self%species(i)%molecular_weight = empty_dp
+            end if
         end do
         self%species_names = slist
+        if (.not. present(input_reactants)) then
+            do i = 1,ns
+                if (.not. found_db(i)) then
+                    call abort('mixture_init: Species not found in ThermoDB: '//trim(slist(i)))
+                end if
+            end do
+        end if
         self%is_condensed = self%species%is_condensed()
         self%num_condensed = count(self%is_condensed)
         self%num_species = ns
@@ -209,8 +227,15 @@ contains
 
         ! Add the info from the ReactantInput
         if (present(input_reactants)) then
+            if (size(input_reactants) /= ns) then
+                call abort('mixture_init: input_reactants size mismatch')
+            end if
             ! Loop over each reactant, checking if any additional info is provided
             do i = 1, size(input_reactants)
+                if (.not. found_db(i) .and. .not. allocated(input_reactants(i)%formula)) then
+                    call abort('mixture_init: Reactant not found in ThermoDB and no formula provided: '// &
+                               trim(input_reactants(i)%name))
+                end if
 
                 ! Name
                 self%species(i)%name = input_reactants(i)%name
@@ -248,6 +273,22 @@ contains
             end do
         end if
 
+        ! Validate formulas before building the element list
+        do i = 1, ns
+            if (.not. allocated(self%species(i)%formula)) then
+                call abort('mixture_init: Missing formula for species '//trim(self%species_names(i)))
+            end if
+            if (.not. allocated(self%species(i)%formula%elements)) then
+                call abort('mixture_init: Missing formula elements for species '//trim(self%species_names(i)))
+            end if
+            if (.not. allocated(self%species(i)%formula%coefficients)) then
+                call abort('mixture_init: Missing formula coefficients for species '//trim(self%species_names(i)))
+            end if
+            if (size(self%species(i)%formula%elements) /= size(self%species(i)%formula%coefficients)) then
+                call abort('mixture_init: Formula element/coeff size mismatch for species '//trim(self%species_names(i)))
+            end if
+        end do
+
         ! Construct the element list
         if (present(element_names)) then
 
@@ -263,17 +304,32 @@ contains
         else
 
             ! Construct element_names from the species formulas
-            allocate(enames(ns,size(self%species(1)%formula%elements)))
+            k = 0
             do i = 1,ns
-                enames(i,:) = self%species(i)%formula%elements
+                k = max(k, size(self%species(i)%formula%elements))
+            end do
+            if (k == 0) then
+                call abort('mixture_init: empty formula element list')
+            end if
+            allocate(enames(ns,k))
+            enames = ' '
+            do i = 1,ns
+                enames(i,1:size(self%species(i)%formula%elements)) = self%species(i)%formula%elements
             end do
 
             call build_elem_list(enames, elist)
             self%element_names = elist
         end if
 
+        if (size(self%element_names) == 0) then
+            call abort('mixture_init: empty element list')
+        end if
+
         ! Move "E" to the end of the element list if present
         if (self%ions) then
+            if (size(self%element_names) == 0) then
+                call abort('mixture_init: empty element list for ionized problem')
+            end if
             self%element_names = [ &
                 pack(self%element_names, .not. self%element_names == 'E'), &
                 pack(self%element_names,       self%element_names == 'E')  &
@@ -310,6 +366,7 @@ contains
         real(dp), intent(in) :: n_species(:)
         real(dp) :: n_elements(self%num_elements)
         integer :: e
+        call check_array_len(size(n_species), self%num_species, 'mixture_elements_from_species n_species')
         do e = 1,self%num_elements
             n_elements(e) = dot_product(self%stoich_matrix(:,e), n_species)
         end do
@@ -383,6 +440,20 @@ contains
         ! Get the list of possible products from the elements
         n = 0
         do i = 1, np
+            if (.not. allocated(thermo%product_thermo(i)%formula)) then
+                call abort('mixture_get_products: missing formula for product '//trim(thermo%product_name_list(i)))
+            end if
+            if (.not. allocated(thermo%product_thermo(i)%formula%elements)) then
+                call abort('mixture_get_products: missing formula elements for product '//trim(thermo%product_name_list(i)))
+            end if
+            if (.not. allocated(thermo%product_thermo(i)%formula%coefficients)) then
+                call abort('mixture_get_products: missing formula coefficients for product '//trim(thermo%product_name_list(i)))
+            end if
+            if (size(thermo%product_thermo(i)%formula%elements) /= &
+                size(thermo%product_thermo(i)%formula%coefficients)) then
+                call abort('mixture_get_products: formula element/coeff size mismatch for product '// &
+                           trim(thermo%product_name_list(i)))
+            end if
             ! Exclude "omit" names
             ! TODO: pop omit name every time it is found to speed up search
             if (present(omit)) then
@@ -429,6 +500,9 @@ contains
         real(dp) :: ow(size(weights)), fw(size(weights))  ! Normalized weights
         real(dp) :: mw_ox, mw_fu  ! Molecular weight of total oxidant and fuel
 
+        call check_array_len(size(oxidant_weights), self%num_species, 'mixture_weights_from_of oxidant_weights')
+        call check_array_len(size(fuel_weights), self%num_species, 'mixture_weights_from_of fuel_weights')
+
         ! Compute molecular weights of total oxidant and fuel
         mw_ox = dot_product(oxidant_weights, self%species(:)%molecular_weight)
         mw_fu = dot_product(fuel_weights,    self%species(:)%molecular_weight)
@@ -457,6 +531,9 @@ contains
         real(dp) :: b0_ox(self%num_elements), b0_fu(self%num_elements)
         !real(dp) :: mw(self%num_species)  ! Molecular weights
         real(dp) :: vm_fu, vp_fu, vm_ox, vp_ox  ! Total fuel and oxidant valences (m = minus, p = plus)
+
+        call check_array_len(size(oxidant_weights), self%num_species, 'mixture_chem_eq_ratio_to_of_ratio oxidant_weights')
+        call check_array_len(size(fuel_weights), self%num_species, 'mixture_chem_eq_ratio_to_of_ratio fuel_weights')
 
         ! Get the species valences
         call self%get_valence(vm, vp)
@@ -493,6 +570,9 @@ contains
         real(dp) :: b0_ox(self%num_elements), b0_fu(self%num_elements)
         real(dp) :: vm_fu, vp_fu, vm_ox, vp_ox  ! Total fuel and oxidant valences (m = minus, p = plus)
 
+        call check_array_len(size(oxidant_weights), self%num_species, 'mixture_of_ratio_to_chem_eq_ratio oxidant_weights')
+        call check_array_len(size(fuel_weights), self%num_species, 'mixture_of_ratio_to_chem_eq_ratio fuel_weights')
+
         ! Get the species valences
         call self%get_valence(vm, vp)
 
@@ -526,6 +606,9 @@ contains
         ! Locals
         real(dp) :: vm(self%num_elements), vp(self%num_elements)  ! Valences (m = minus, p = plus)
         real(dp) :: vm_fu, vp_fu, vm_ox, vp_ox
+
+        call check_array_len(size(oxidant_weights), self%num_species, 'mixture_weight_eq_ratio_to_of_ratio oxidant_weights')
+        call check_array_len(size(fuel_weights), self%num_species, 'mixture_weight_eq_ratio_to_of_ratio fuel_weights')
 
         ! Get the species valences
         call self%get_valence(vm, vp)
@@ -561,6 +644,9 @@ contains
         real(dp) :: vm(self%num_elements), vp(self%num_elements)  ! Valences (m = minus, p = plus)
         real(dp) :: vm_fu, vp_fu, vm_ox, vp_ox
 
+        call check_array_len(size(oxidant_weights), self%num_species, 'mixture_of_ratio_to_weight_eq_ratio oxidant_weights')
+        call check_array_len(size(fuel_weights), self%num_species, 'mixture_of_ratio_to_weight_eq_ratio fuel_weights')
+
         ! Get the species valences
         call self%get_valence(vm, vp)
 
@@ -593,6 +679,8 @@ contains
         integer :: i
         real(dp) :: mw  ! Molecular weights
 
+        call check_array_len(size(weights), self%num_species, 'mixture_weights_to_moles weights')
+
         ! Get the species molecular weights
         do i = 1, self%num_species
             mw = self%species(i)%molecular_weight
@@ -605,6 +693,7 @@ contains
         class(Mixture), intent(in) :: self
         real(dp), intent(in) :: moles(:)
         real(dp) :: weights(self%num_species)
+        call check_array_len(size(moles), self%num_species, 'mixture_weights_from_moles moles')
         weights = moles * self%species%molecular_weight
     end function
 
@@ -612,6 +701,7 @@ contains
         class(Mixture), intent(in) :: self
         real(dp), intent(in) :: weights(:)
         real(dp) :: moles(self%num_species)
+        call check_array_len(size(weights), self%num_species, 'mixture_moles_from_weights weights')
         moles = weights / self%species%molecular_weight
     end function
 
@@ -619,6 +709,7 @@ contains
         class(Mixture), intent(in) :: self
         real(dp), intent(in) :: per_mole(:)
         real(dp) :: per_weight(self%num_species)
+        call check_array_len(size(per_mole), self%num_species, 'mixture_per_weight_from_per_mole per_mole')
         per_weight = per_mole / self%species%molecular_weight
     end function
 
@@ -626,6 +717,7 @@ contains
         class(Mixture), intent(in) :: self
         real(dp), intent(in) :: per_weight(:)
         real(dp) :: per_mole(self%num_species)
+        call check_array_len(size(per_weight), self%num_species, 'mixture_per_mole_from_per_weight per_weight')
         per_mole = per_weight * self%species%molecular_weight
     end function
 
@@ -670,6 +762,8 @@ contains
         integer :: j
         real(dp) :: hj, nj
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_enthalpy_single weights')
+
         h = 0.0d0
         do j = 1, self%num_species
             nj = weights(j)/self%species(j)%molecular_weight/sum(weights)
@@ -694,6 +788,9 @@ contains
         integer :: j
         real(dp) :: hj, nj
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_enthalpy_multi weights')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_enthalpy_multi temperatures')
+
         h = 0.0d0
         do j = 1, self%num_species
             nj = weights(j)/self%species(j)%molecular_weight/sum(weights)
@@ -714,6 +811,8 @@ contains
         ! Return
         real(dp) :: e
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_energy_single weights')
+
         e = self%calc_enthalpy(weights, temperature) &
           - self%calc_pressure(weights, temperature)/sum(weights) ! PV since using weights, not densities.
 
@@ -728,6 +827,9 @@ contains
 
         ! Return
         real(dp) :: e
+
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_energy_multi weights')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_energy_multi temperatures')
 
         e = self%calc_enthalpy(weights, temperatures) &
           - self%calc_pressure(weights, temperatures)/sum(weights) ! PV since using weights, not densities.
@@ -748,6 +850,8 @@ contains
         ! Locals
         integer :: j
         real(dp) :: sj, nj, n
+
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_entropy_single weights')
 
         n = 0.0d0
         s = 0.0d0
@@ -782,6 +886,10 @@ contains
         integer :: j
         real(dp) :: sj, nj, n
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_entropy_multi weights')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_entropy_multi temperatures')
+        call check_array_len(size(pressures), self%num_species, 'mixture_calc_entropy_multi pressures')
+
         n = 0.0d0
         s = 0.0d0
         do j = 1, self%num_species
@@ -811,6 +919,8 @@ contains
         ! Return
         real(dp) :: g
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_gibbs_energy_single weights')
+
         g = self%calc_enthalpy(weights, temperature) &
           - self%calc_entropy(weights, temperature, pressure) * temperature
 
@@ -830,6 +940,10 @@ contains
         ! Locals
         integer :: j
         real(dp) :: gj, nj, n, nr, pr
+
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_gibbs_energy_multi weights')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_gibbs_energy_multi temperatures')
+        call check_array_len(size(pressures), self%num_species, 'mixture_calc_gibbs_energy_multi pressures')
 
         ! Must pre-compute because cannot factor out of the
         ! sum when consitituent temperatures can vary.
@@ -870,6 +984,8 @@ contains
         integer :: j
         real(dp) :: cpj, nj
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_frozen_cp_single weights')
+
         cp = 0.0d0
         do j = 1, self%num_species
             nj  = weights(j)/self%species(j)%molecular_weight/sum(weights)
@@ -893,6 +1009,9 @@ contains
         ! Locals
         integer :: j
         real(dp) :: cpj, nj
+
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_frozen_cp_multi weights')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_frozen_cp_multi temperatures')
 
         cp = 0.0d0
         do j = 1, self%num_species
@@ -918,6 +1037,8 @@ contains
         integer :: j
         real(dp) :: cvj, nj
 
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_frozen_cv_single weights')
+
         cv = 0.0d0
         do j = 1, self%num_species
             nj  = weights(j)/self%species(j)%molecular_weight/sum(weights)
@@ -941,6 +1062,9 @@ contains
         ! Locals
         integer :: j
         real(dp) :: cvj, nj
+
+        call check_array_len(size(weights), self%num_species, 'mixture_calc_frozen_cv_multi weights')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_frozen_cv_multi temperatures')
 
         cv = 0.0d0
         do j = 1, self%num_species
@@ -966,6 +1090,8 @@ contains
         integer :: j
         real(dp) :: n, nj
 
+        call check_array_len(size(densities), self%num_species, 'mixture_calc_pressure_single densities')
+
         n = 0.0d0
         do j = 1, self%num_species
             if (self%is_condensed(j)) cycle
@@ -990,6 +1116,9 @@ contains
         integer :: j
         real(dp) :: nT, nj
 
+        call check_array_len(size(densities), self%num_species, 'mixture_calc_pressure_multi densities')
+        call check_array_len(size(temperatures), self%num_species, 'mixture_calc_pressure_multi temperatures')
+
         nT = 0.0d0
         do j = 1, self%num_species
             if (self%is_condensed(j)) cycle
@@ -1013,6 +1142,8 @@ contains
         ! Locals
         integer :: i
         real(dp) :: moles(size(weights))
+
+        call check_array_len(size(weights), self%num_species, 'mixture_element_amounts_from_weights weights')
 
         ! Convert weights to moles and normalize by *weights*
         ! TODO: Do we want the weight normalization baked into this function?
@@ -1086,7 +1217,17 @@ contains
         end do
     end subroutine
 
-    function get_species(thermo, name) result(species)
+    subroutine check_array_len(n, expected, context)
+        integer, intent(in) :: n
+        integer, intent(in) :: expected
+        character(*), intent(in) :: context
+
+        if (n /= expected) then
+            call abort(trim(context)//' size mismatch')
+        end if
+    end subroutine
+
+    function get_species(thermo, name, found) result(species)
         ! Search a ThermoDB for a species of a given name
         ! Linear search for now. Lots of opportunities to be smarter
         ! TODO: Make this a method on the ThermoDB
@@ -1094,6 +1235,7 @@ contains
         ! Arguments
         type(ThermoDB), intent(in), target :: thermo
         character(*), intent(in) :: name
+        logical, intent(out), optional :: found
 
         ! Return
         type(SpeciesThermo) :: species
@@ -1102,11 +1244,14 @@ contains
         type(SpeciesThermo), pointer :: candidate
         integer :: i
 
+        if (present(found)) found = .false.
+
         ! Search products
         do i = 1,thermo%num_products
             candidate => thermo%product_thermo(i)
             if (names_match(name, candidate%name)) then
                 species = candidate
+                if (present(found)) found = .true.
                 return
             end if
         end do
@@ -1116,11 +1261,17 @@ contains
             candidate => thermo%reactant_thermo(i)
             if (names_match(name, candidate%name)) then
                 species = candidate
+                if (present(found)) found = .true.
                 return
             end if
         end do
 
-        ! call log_info('Species '//trim(name)//' not found in ThermoDB')
+        species%name = name
+        species%i_phase = 0
+        species%num_intervals = 0
+        species%molecular_weight = empty_dp
+        species%enthalpy_ref = 0.0d0
+        species%T_ref = 0.0d0
 
     end function
 
