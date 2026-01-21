@@ -146,6 +146,7 @@ contains
         character(enl), allocatable :: enames(:,:)
         character(:), allocatable :: slist(:), elist(:)
         real(dp) :: h_val, T_val
+        type(Mixture) :: reactants
 
         ! Optional argument handling
         sort_condensed_ = .false.
@@ -165,11 +166,8 @@ contains
                 slist = names
             end block
         else if (present(reactant_names)) then
-            block
-                type(Mixture) :: reactants
-                reactants = Mixture(thermo, reactant_names, ions=ions)
-                slist = reactants%get_products(thermo, omitted_product_names)
-            end block
+            reactants = Mixture(thermo, reactant_names, ions=ions)
+            slist = reactants%get_products(thermo, omitted_product_names)
         else
             call abort("Must specify either species_names or reactant_names")
         end if
