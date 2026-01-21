@@ -244,18 +244,8 @@
 # limitations under the License.
 #=============================================================================
 
-if(POLICY CMP0148)
-  cmake_policy(SET CMP0148 NEW)
-endif()
-
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-set(PYTHON_EXECUTABLE "${Python3_EXECUTABLE}")
-set(PYTHON_INCLUDE_DIRS "${Python3_INCLUDE_DIRS}")
-set(PYTHON_INCLUDE_DIR "${Python3_INCLUDE_DIRS}")
-set(PYTHON_LIBRARIES "${Python3_LIBRARIES}")
-set(PYTHON_VERSION_MAJOR "${Python3_VERSION_MAJOR}")
-set(PYTHON_VERSION_MINOR "${Python3_VERSION_MINOR}")
-set(PYTHON_VERSION_PATCH "${Python3_VERSION_PATCH}")
+find_package(PythonInterp REQUIRED)
+find_package(PythonLibs)
 include(targetLinkLibrariesWithDynamicLookup)
 
 set(_command "
