@@ -15,31 +15,18 @@ typedef enum { CEA_SHOCK_PROPERTY_TYPE_ENUM      } cea_shock_property_type;
 typedef enum { CEA_DETONATION_PROPERTY_TYPE_ENUM } cea_detonation_property_type;
 typedef enum { CEA_ERROR_CODE_ENUM               } cea_error_code;
 
-// Opaque Types
-typedef struct {} cea_reactant_t;
-typedef struct {} cea_mixture_t;
-typedef struct {} cea_eqsolver_t;
-typedef struct {} cea_eqsolution_t;
-typedef struct {} cea_eqpartials_t;
-typedef struct {} cea_rocket_solver_t;
-typedef struct {} cea_rocket_solution_t;
-typedef struct {} cea_shock_solver_t;
-typedef struct {} cea_shock_solution_t;
-typedef struct {} cea_detonation_solver_t;
-typedef struct {} cea_detonation_solution_t;
-
-// Type Shorthand
-typedef cea_reactant_t*    cea_reactant;
-typedef cea_mixture_t*     cea_mixture;
-typedef cea_eqsolver_t*    cea_eqsolver;
-typedef cea_eqsolution_t*  cea_eqsolution;
-typedef cea_eqpartials_t*  cea_eqpartials;
-typedef cea_rocket_solver_t*    cea_rocket_solver;
-typedef cea_rocket_solution_t*  cea_rocket_solution;
-typedef cea_shock_solver_t*     cea_shock_solver;
-typedef cea_shock_solution_t*   cea_shock_solution;
-typedef cea_detonation_solver_t*     cea_detonation_solver;
-typedef cea_detonation_solution_t*   cea_detonation_solution;
+// Type Shorthand, Opaque Types as void*
+typedef void*    cea_reactant;
+typedef void*     cea_mixture;
+typedef void*    cea_eqsolver;
+typedef void*  cea_eqsolution;
+typedef void*  cea_eqpartials;
+typedef void*    cea_rocket_solver;
+typedef void*  cea_rocket_solution;
+typedef void*     cea_shock_solver;
+typedef void*   cea_shock_solution;
+typedef void*     cea_detonation_solver;
+typedef void*   cea_detonation_solution;
 typedef cea_error_code     cea_err;
 typedef const char*        cea_string;
 typedef int                cea_int;
