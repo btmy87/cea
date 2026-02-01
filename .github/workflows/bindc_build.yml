@@ -1,0 +1,112 @@
+name: bindc_build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }} / ${{ matrix.toolchain.ccompiler }} / ${{matrix.toolchain.fcompiler}})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+        toolchain:
+          - ccompiler: gcc
+            cversion: "11"
+            fcompiler: gcc
+            fversion: "11"
+        include:
+          - os: ubuntu-22.04
+            toolchain:
+              ccompiler: intel
+              cversion: "2023.1"
+              fcompiler: intel
+              fversion: "2023.1"
+          - os: ubuntu-22.04
+            toolchain:
+              ccompiler: intel-classic
+              cversion: "2021.9"
+              fcompiler: intel-classic
+              fversion: "2021.9"
+          - os: windows-latest
+            toolchain: 
+              ccompiler: msvc
+              cversion: latest
+              fcompiler: intel
+              fversion: "2025.2"
+          - os: windows-latest
+            toolchain:
+              ccompiler: intel
+              cversion: "2025.2"
+              fcompiler: intel
+              fversion: "2025.2"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out CEA
+        uses: actions/checkout@v4
+
+      - name: Set up Fortran compiler 
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: ${{ matrix.toolchain.fcompiler }}
+          version: ${{ matrix.toolchain.fversion }}
+
+      - name: Set up C Compiler
+        if: ${{matrix.toolchain.ccompiler}} == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ninja setuptools numpy cython
+
+      - name: Record toolchain info
+        run: |
+          git --version
+          cmake --version
+          ninja --version
+          if command -v gfortran &> /dev/null; then gfortran --version; fi
+          if [ -n "${FC}" ]; then "${FC}" --version; fi
+
+      - name: Configure (normal)
+        if: ${{matrix.toolchain.ccompiler}} != 'msvc'
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCEA_BUILD_TESTING=OFF \
+            -DCEA_ENABLE_BIND_C=ON \
+            -DCEA_ENABLE_BIND_CXX=OFF \
+            -DCEA_ENABLE_BIND_PYTHON=OFF \
+            -DCEA_ENABLE_BIND_MATLAB=OFF \
+            -DCEA_ENABLE_BIND_EXCEL=OFF
+
+      - name: Configure (msvc)
+        if: ${{matrix.toolchain.ccompiler}} == 'msvc'
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCEA_BUILD_TESTING=OFF \
+            -DCEA_ENABLE_BIND_C=ON \
+            -DCEA_ENABLE_BIND_CXX=OFF \
+            -DCEA_ENABLE_BIND_PYTHON=OFF \
+            -DCEA_ENABLE_BIND_MATLAB=OFF \
+            -DCEA_ENABLE_BIND_EXCEL=OFF \
+            -DCMAKE_C_COMPILER=cl \
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+
+      - name: Build
+        run: |
+          cmake --build build
+
+      - name: Run smoke test (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          ./build/source/cea -h
+
+      - name: Run smoke test (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          ./build/source/cea.exe -h
