@@ -84,7 +84,7 @@ jobs:
             -DCEA_ENABLE_BIND_EXCEL=OFF
 
       - name: Configure (msvc)
-        if: ${{matrix.toolchain.ccompiler}} == 'msvc'
+        if: ${{matrix.toolchain.ccompiler == 'msvc'}}
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
