@@ -55,7 +55,7 @@ jobs:
           version: ${{ matrix.toolchain.fversion }}
 
       - name: Set up C Compiler
-        if: ${{matrix.toolchain.ccompiler}} == 'msvc'
+        if: ${{matrix.toolchain.ccompiler == 'msvc'}}
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install build tools
@@ -72,7 +72,7 @@ jobs:
           if [ -n "${FC}" ]; then "${FC}" --version; fi
 
       - name: Configure (normal)
-        if: ${{matrix.toolchain.ccompiler}} != 'msvc'
+        if: ${{matrix.toolchain.ccompiler != 'msvc'}}
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
