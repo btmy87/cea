@@ -16,17 +16,17 @@ typedef enum { CEA_DETONATION_PROPERTY_TYPE_ENUM } cea_detonation_property_type;
 typedef enum { CEA_ERROR_CODE_ENUM               } cea_error_code;
 
 // Type Shorthand, Opaque Types as void*
-typedef void*    cea_reactant;
-typedef void*     cea_mixture;
-typedef void*    cea_eqsolver;
-typedef void*  cea_eqsolution;
-typedef void*  cea_eqpartials;
-typedef void*    cea_rocket_solver;
-typedef void*  cea_rocket_solution;
-typedef void*     cea_shock_solver;
-typedef void*   cea_shock_solution;
-typedef void*     cea_detonation_solver;
-typedef void*   cea_detonation_solution;
+typedef void*              cea_reactant;
+typedef void*              cea_mixture;
+typedef void*              cea_eqsolver;
+typedef void*              cea_eqsolution;
+typedef void*              cea_eqpartials;
+typedef void*              cea_rocket_solver;
+typedef void*              cea_rocket_solution;
+typedef void*              cea_shock_solver;
+typedef void*              cea_shock_solution;
+typedef void*              cea_detonation_solver;
+typedef void*              cea_detonation_solution;
 typedef cea_error_code     cea_err;
 typedef const char*        cea_string;
 typedef int                cea_int;
