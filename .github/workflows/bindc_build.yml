@@ -46,7 +46,14 @@ jobs:
         shell: bash
     steps:
       - name: Check out CEA
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Check out GFE
+        if: ${{ runner.os != 'Windows' }}
+        uses: actions/checkout@v6
+        with:
+          repository: Goddard-Fortran-Ecosystem/GFE
+          path: extern/gfe
 
       - name: Set up Fortran compiler 
         if: ${{ runner.os != 'Windows' || matrix.toolchain.fcompiler != 'gcc' }}
@@ -92,6 +99,19 @@ jobs:
           ninja --version
           if command -v gfortran &> /dev/null; then gfortran --version; fi
           if [ -n "${FC}" ]; then "${FC}" --version; fi
+
+      - name: Configure and Build GFE
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          cmake -S extern/gfe -B build/extern/gfe -GNinja
+            -DCMAKE_INSTALL_PREFIX=build/install \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSKIP_MPI=YES \
+            -DSKIP_OPENMP=YES \
+            -DSKIP_FHAMCREST=YES \
+            -DSKIP_ESMF=YES \
+            -DSKIP_ROBUST=YES
+          cmake --build build/extern/gfe --target install
 
       - name: Configure (normal)
         if: ${{matrix.toolchain.ccompiler != 'msvc'}}
