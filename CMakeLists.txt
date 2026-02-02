@@ -46,10 +46,10 @@ endif()
 
 # Testing
 option(CEA_BUILD_TESTING "Build test harness for CEA" ${PROJECT_IS_TOP_LEVEL})
-if(CEA_BUILD_TESTING)
+if(CEA_BUILD_TESTING AND NOT CMAKE_HOST_WIN32)
     find_package(PFUNIT REQUIRED)
-    include(CTest)
 endif()
+include(CTest)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
