@@ -46,11 +46,6 @@ if (CEA_BUILD_TESTING)
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
 
-endif()
-
-# modern versions of MSVC struggle with some of these examples
-if (CEA_BUILD_TESTING AND NOT (CMAKE_C_COMPILER_ID STREQUAL "MSVC"))
-
     add_executable(cea_bindc_rp1311_ex7 samples/rp1311_example7.c)
     target_link_libraries(cea_bindc_rp1311_ex7 PRIVATE cea::bindc)
     add_test(
@@ -74,4 +69,6 @@ if (CEA_BUILD_TESTING AND NOT (CMAKE_C_COMPILER_ID STREQUAL "MSVC"))
         COMMAND cea_bindc_rp1311_ex9
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
+
 endif()
+
