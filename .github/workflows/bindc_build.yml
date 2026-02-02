@@ -98,7 +98,7 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCEA_BUILD_TESTING=OFF \
+            -DCEA_BUILD_TESTING=ON \
             -DCEA_ENABLE_BIND_C=ON \
             -DCEA_ENABLE_BIND_CXX=OFF \
             -DCEA_ENABLE_BIND_PYTHON=OFF \
@@ -110,7 +110,7 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCEA_BUILD_TESTING=OFF \
+            -DCEA_BUILD_TESTING=ON \
             -DCEA_ENABLE_BIND_C=ON \
             -DCEA_ENABLE_BIND_CXX=OFF \
             -DCEA_ENABLE_BIND_PYTHON=OFF \
@@ -132,3 +132,6 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           ./build/source/cea.exe -h
+      
+      - name: Run ctest
+        run: ctest
