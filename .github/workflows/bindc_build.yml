@@ -125,7 +125,8 @@ jobs:
             -DCEA_ENABLE_BIND_CXX=OFF \
             -DCEA_ENABLE_BIND_PYTHON=OFF \
             -DCEA_ENABLE_BIND_MATLAB=OFF \
-            -DCEA_ENABLE_BIND_EXCEL=OFF
+            -DCEA_ENABLE_BIND_EXCEL=OFF \
+            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
 
       - name: Configure (msvc)
         if: ${{matrix.toolchain.ccompiler == 'msvc'}}
