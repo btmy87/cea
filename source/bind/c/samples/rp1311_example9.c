@@ -63,7 +63,7 @@ int main(void) {
     cea_mixture_of_ratio_to_weights(reac, LEN(reactants), oxidant_weights, fuel_weights, of_ratio, weights);
 
     const cea_real pip[] = { 10.0, 100.0, 1000.0 };
-    const cea_real subar[] = {25.0};
+    const cea_real subar[] = {0.0};
     const cea_real supar[] = { 25.0, 50.0, 75.0 };
     const cea_real pc = 53.3172;
     const cea_real ac_at = 1.58;
@@ -72,17 +72,17 @@ int main(void) {
     cea_mixture_calc_property_multitemp(reac, CEA_ENTHALPY, LEN(reactants), weights, LEN(reactants), reactant_temps, &hc);
     hc = hc/R;
 
-    cea_rocket_solver_solve_fac(solver, soln, weights, pc, pip, 3, subar, 1, supar, 3, 0, hc, TRUE, ac_at, FALSE, 0.0, FALSE);
+    cea_rocket_solver_solve_fac(solver, soln, weights, pc, pip, 3, subar, 0, supar, 3, 0, hc, TRUE, ac_at, FALSE, 0.0, FALSE);
 
-    cea_real* temperature = calloc(nr, sizeof(cea_real));
-    cea_real* pressure = calloc(nr, sizeof(cea_real));
-    cea_real* gamma = calloc(nr, sizeof(cea_real));
-    cea_real* mach = calloc(nr, sizeof(cea_real));
-    cea_real* area_ratio = calloc(nr, sizeof(cea_real));
-    cea_real* isp = calloc(nr, sizeof(cea_real));
-    cea_real* isp_vac = calloc(nr, sizeof(cea_real));
-    cea_real* cstar = calloc(nr, sizeof(cea_real));
-    cea_real* cf = calloc(nr, sizeof(cea_real));
+    cea_real* temperature = calloc(num_pts, sizeof(cea_real));
+    cea_real* pressure = calloc(num_pts, sizeof(cea_real));
+    cea_real* gamma = calloc(num_pts, sizeof(cea_real));
+    cea_real* mach = calloc(num_pts, sizeof(cea_real));
+    cea_real* area_ratio = calloc(num_pts, sizeof(cea_real));
+    cea_real* isp = calloc(num_pts, sizeof(cea_real));
+    cea_real* isp_vac = calloc(num_pts, sizeof(cea_real));
+    cea_real* cstar = calloc(num_pts, sizeof(cea_real));
+    cea_real* cf = calloc(num_pts, sizeof(cea_real));
     cea_rocket_solution_get_property(soln, CEA_ROCKET_TEMPERATURE, num_pts, temperature);
     cea_rocket_solution_get_property(soln, CEA_ROCKET_PRESSURE, num_pts, pressure);
     cea_rocket_solution_get_property(soln, CEA_ROCKET_GAMMA_S, num_pts, gamma);
@@ -166,5 +166,4 @@ int main(void) {
     free(cf);
 
     return 0;
-
 }
