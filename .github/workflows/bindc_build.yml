@@ -120,8 +120,22 @@ jobs:
             -DSKIP_ROBUST=YES
           cmake --build build/extern/gfe --target install
 
+      - name: Configure (linux)
+        if: ${{runner.os != 'Windows'}}
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_PREFIX_PATH=build/install \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCEA_BUILD_TESTING=ON \
+            -DCEA_ENABLE_BIND_C=ON \
+            -DCEA_ENABLE_BIND_CXX=OFF \
+            -DCEA_ENABLE_BIND_PYTHON=ON \
+            -DCEA_ENABLE_BIND_MATLAB=OFF \
+            -DCEA_ENABLE_BIND_EXCEL=OFF \
+            -DCMAKE_Fortran_FLAGS_DEBUG="-g -O0 -Wall -Wextra -Wpedantic -Wcharacter-truncation -Wno-maybe-uninitialized -fcheck=all -fbacktrace"
+
       - name: Configure (normal)
-        if: ${{matrix.toolchain.ccompiler != 'msvc'}}
+        if: ${{runner.os == 'Windows' && matrix.toolchain.ccompiler != 'msvc'}}
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_PREFIX_PATH=build/install \
@@ -135,7 +149,7 @@ jobs:
             -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
 
       - name: Configure (msvc)
-        if: ${{matrix.toolchain.ccompiler == 'msvc'}}
+        if: ${{runner.os == 'Windows' && matrix.toolchain.ccompiler == 'msvc'}}
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
