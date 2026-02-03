@@ -132,14 +132,14 @@ jobs:
             -DCEA_ENABLE_BIND_PYTHON=ON \
             -DCEA_ENABLE_BIND_MATLAB=OFF \
             -DCEA_ENABLE_BIND_EXCEL=OFF \
-            -DCMAKE_Fortran_FLAGS_DEBUG="-g -O0 -Wall -Wextra -Wpedantic -Wcharacter-truncation -Wno-maybe-uninitialized -fcheck=all -fbacktrace"
+            -DCMAKE_Fortran_FLAGS="-ffree-line-length-none"
 
       - name: Configure (normal)
         if: ${{runner.os == 'Windows' && matrix.toolchain.ccompiler != 'msvc'}}
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_PREFIX_PATH=build/install \
-            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCEA_BUILD_TESTING=ON \
             -DCEA_ENABLE_BIND_C=ON \
             -DCEA_ENABLE_BIND_CXX=OFF \
@@ -177,4 +177,4 @@ jobs:
           ./build/source/cea.exe -h
       
       - name: Run ctest
-        run: ctest --output-on-failure
+        run: ctest --test-dir build --output-on-failure
