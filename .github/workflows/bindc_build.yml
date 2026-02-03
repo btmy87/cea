@@ -104,7 +104,7 @@ jobs:
       - name: Configure and Build GFE
         if: ${{ runner.os != 'Windows' }}
         run: |
-          cmake -S extern/gfe -B build/extern/gfe -GNinja
+          cmake -S extern/gfe -B build/extern/gfe -GNinja \
             -DCMAKE_INSTALL_PREFIX=build/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DSKIP_MPI=YES \
