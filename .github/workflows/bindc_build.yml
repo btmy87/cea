@@ -119,7 +119,7 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_PREFIX_PATH=build/install \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_TYPE=Debug \
             -DCEA_BUILD_TESTING=ON \
             -DCEA_ENABLE_BIND_C=ON \
             -DCEA_ENABLE_BIND_CXX=OFF \
