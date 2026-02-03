@@ -19,6 +19,12 @@ jobs:
         include:
           - os: ubuntu-22.04
             toolchain:
+              ccompiler: gcc
+              cversion: "14"
+              fcompiler: gcc
+              fversion: "14"
+          - os: ubuntu-22.04
+            toolchain:
               ccompiler: intel
               cversion: "2023.1"
               fcompiler: intel
