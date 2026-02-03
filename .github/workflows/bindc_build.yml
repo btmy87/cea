@@ -54,6 +54,7 @@ jobs:
         with:
           repository: Goddard-Fortran-Ecosystem/GFE
           path: extern/gfe
+          submodules: true
 
       - name: Set up Fortran compiler 
         if: ${{ runner.os != 'Windows' || matrix.toolchain.fcompiler != 'gcc' }}
@@ -117,6 +118,7 @@ jobs:
         if: ${{matrix.toolchain.ccompiler != 'msvc'}}
         run: |
           cmake -S . -B build -G Ninja \
+            -DCMAKE_PREFIX_PATH=build/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DCEA_BUILD_TESTING=ON \
             -DCEA_ENABLE_BIND_C=ON \
@@ -154,4 +156,4 @@ jobs:
           ./build/source/cea.exe -h
       
       - name: Run ctest
-        run: ctest
+        run: ctest --output-on-failure
