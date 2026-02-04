@@ -31,3 +31,6 @@ source/bind/excel/*.dll
 source/bind/excel/~$*.xlsm
 source/bind/excel/*.lib
 source/bind/python/samples
+source/bind/matlab/*.dll
+source/bind/matlab/*.so
+
