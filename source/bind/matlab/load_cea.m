@@ -1,16 +1,27 @@
 function load_cea(opts)
 % load_cea loads cea bindc dll
 %
-% INPUTS:
+% INPUT OPTIONS:
 %  ceaDataDir: directory containing thermo.lib and trans.lib
 %  ceaInstallDir: CEA installation directory, should contain
 %                 - lib\cea_bindc.dll
 %                 - include\cea\bindc\cea.h
 %                 - include\cea\bindc\cea_enum.h
 %                 If built and installed, matches CMAKE_INSTALL_PREFIX
-%  alias: alias for loading dll
+%  alias: alias for loading dll, defaults to "cea"
 %  makeThunk: Set to true to generate a reusable thunk file
-%  reload: Force reload if already loaded
+%  useThunk: Set to true to use an existing thunk file generated with
+%            makeThunk.  This is faster than recompiling the interface and
+%            can be used without a compiler setup.
+%  reload: Set to true to force reload if already loaded.  Defaults to
+%          false which will do nothing if CEA is already loaded.
+%  verbose: Set to true for additional output about loading process
+%  shortname: Set to library name, defaults to "cea_bindc", which should
+%             work for most cases.
+%  initialize: Defaults to true, set to false to skip CEA initialization.
+%              Use false to accomodate non-standard library names or
+%              locations.  The user will need to call cea_init_thermo and
+%              cea_init_trans manually.
 %
 
 arguments
@@ -22,6 +33,7 @@ arguments
     opts.reload (1, 1) {mustBeNumericOrLogical} = false;
     opts.verbose (1, 1) {mustBeNumericOrLogical} = false;
     opts.shortname (1, 1) string = "cea_bindc";
+    opts.initialize (1, 1) {mustBeNumericOrLogical} = true;
 end
 
 %% Check if already loaded, unload if requested
@@ -131,4 +143,22 @@ assert(out1 == "CEA_SUCCESS", "Error calling cea_version_major");
 assert(out2 == "CEA_SUCCESS", "Error calling cea_version_minor");
 assert(out3 == "CEA_SUCCESS", "Error calling cea_version_patch");
 
+%% Initialize library
+if opts.initialize
+    thermolib = fullfile(opts.ceaDataDir, "thermo.lib");
+    translib = fullfile(opts.ceaDataDir, "trans.lib");
+    if opts.verbose
+        fprintf("Initializing CEA thermo: %s\n", thermolib);
+    end
+    calllib(opts.alias, "cea_init_thermo", char(thermolib));
+
+    if opts.verbose
+        fprintf("Initializing CEA trans: %s\n", translib);
+    end
+    calllib(opts.alias, "cea_init_trans", char(translib));
+
+    ceainit = libpointer("int32Ptr", 0);
+    outInit = calllib(opts.alias, "cea_is_initialized", ceainit);
+    assert(outInit == "CEA_SUCCESS", "Error calling cea_is_initialized");
+    assert(ceainit.Value == 1, "CEA not successfully initialized");
 end
