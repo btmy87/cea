@@ -72,7 +72,11 @@ else
 end
 assert(isfile(libname), "CEA Library does not exist: %s", libname);
 
-incdir = fullfile(opts.ceaInstallDir, "include", "cea", "bindc");
+% incdir = fullfile(opts.ceaInstallDir, "include", "cea", "bindc");
+% temporary hack to use different header file
+% can't get *char[] to work, but char** works fine
+tempname = mfilename("fullpath");
+incdir = fileparts(tempname);
 header1 = fullfile(incdir, "cea.h");
 header2 = fullfile(incdir, "cea_enum.h");
 

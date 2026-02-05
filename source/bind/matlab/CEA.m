@@ -105,6 +105,26 @@ classdef CEA
             assert(err == "CEA_SUCCESS", "Error in cea_eqsolution_get_property");
             out = outPtr.Value; 
         end
+
+        function eqpartials_destroy(obj, partials)
+            err = calllib(obj.alias, "cea_eqpartials_destroy", partials);
+            assert(err == "CEA_SUCCESS", "Error in cea_eqpartials_destroy");
+        end
+
+        function eqsolution_destroy(obj, soln)
+            err = calllib(obj.alias, "cea_eqsolution_destroy", soln);
+            assert(err == "CEA_SUCCESS", "Error in cea_eqsolution_destroy");
+        end
+
+        function eqsolver_destroy(obj, solver)
+            err = calllib(obj.alias, "cea_eqsolver_destroy", solver);
+            assert(err == "CEA_SUCCESS", "Error in cea_eqsolver_destroy");
+        end
+
+        function mixture_destroy(obj, mix)
+            err = calllib(obj.alias, "cea_mixture_destroy", mix);
+            assert(err == "CEA_SUCCESS", "Error in cea_mixture_destroy");
+        end
     end
 
 
