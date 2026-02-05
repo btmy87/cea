@@ -38,12 +38,12 @@ typedef struct {
     cea_int num_elements;
     const cea_string *elements;
     const cea_real *coefficients;
-    bool has_molecular_weight;
+    char has_molecular_weight;
     cea_real molecular_weight;
-    bool has_enthalpy;
+    char has_enthalpy;
     cea_real enthalpy;
     cea_string enthalpy_units;
-    bool has_temperature;
+    char has_temperature;
     cea_real temperature;
     cea_string temperature_units;
 } cea_reactant_input;
@@ -51,8 +51,8 @@ typedef struct {
 // Struct types for optional arguments
 typedef struct {
     cea_real trace;
-    bool ions;
-    bool transport;
+    char ions;
+    char transport;
     cea_mixture reactants;
     cea_int ninsert;
     const cea_string* insert;
@@ -99,23 +99,23 @@ cea_err cea_mixture_create(
 cea_err cea_mixture_create_w_ions(
     cea_mixture *mix,
     const cea_int nspecies,
-    const cea_string* species
+    const char** species
 );
 
 cea_err cea_mixture_create_from_reactants(
     cea_mixture *mix,
     const cea_int nreactants,
-    const cea_string* reactants,
+    const char** reactants,
     const cea_int nomit,
-    const cea_string* omit
+    const char** omit
 );
 
 cea_err cea_mixture_create_from_reactants_w_ions(
     cea_mixture *mix,
     const cea_int nreactants,
-    const cea_string reactants[],
+    const char** reactants,
     const cea_int nomit,
-    const cea_string omit[]
+    const char** omit
 );
 
 cea_err cea_mixture_create_from_input_reactants(
@@ -337,10 +337,10 @@ cea_err cea_eqsolver_get_size(
 //     const cea_string cproducts[],
 //     const cea_int ninsert,
 //     const cea_string insert[],
-//     const bool set_trace,
+//     const char set_trace,
 //     const cea_real trace,
-//     const bool transport,
-//     const bool ions
+//     const char transport,
+//     const char ions
 // );
 
 //----------------------------------------------------------------------
@@ -367,7 +367,7 @@ cea_err cea_eqsolution_get_weights(
     const cea_eqsolution soln,
     const cea_int np,
     cea_real weights[],
-    const bool log
+    const char log
 );
 
 cea_err cea_eqsolution_set_T(
@@ -386,7 +386,7 @@ cea_err cea_eqsolution_get_species_amounts(
     const cea_eqsolution soln,
     const cea_int np,
     cea_real amounts[],
-    const bool mass
+    const char mass
 );
 
 cea_err cea_eqsolution_get_moles(
@@ -460,9 +460,9 @@ cea_err cea_rocket_solver_solve_iac(
     const cea_int nsupar,
     const cea_int n_frz,
     const cea_real hc_or_tc,
-    const bool use_hc,
+    const char use_hc,
     const cea_real tc_est,
-    const bool use_tc_est
+    const char use_tc_est
 );
 
 cea_err cea_rocket_solver_solve_fac(
@@ -478,11 +478,11 @@ cea_err cea_rocket_solver_solve_fac(
     const cea_int nsupar,
     const cea_int n_frz,
     const cea_real hc_or_tc,
-    const bool use_hc,
+    const char use_hc,
     const cea_real mdot_or_acat,
-    const bool use_mdot,
+    const char use_mdot,
     const cea_real tc_est,
-    const bool use_tc_est
+    const char use_tc_est
 );
 
 //----------------------------------------------------------------------
@@ -517,7 +517,7 @@ cea_err cea_rocket_solution_get_weights(
     const cea_int np,
     const cea_int station,
     cea_real weights[],
-    const bool log
+    const char log
 );
 
 cea_err cea_rocket_solution_get_species_amounts(
@@ -525,7 +525,7 @@ cea_err cea_rocket_solution_get_species_amounts(
     const cea_int np,
     const cea_int station,
     cea_real amounts[],
-    const bool mass
+    const char mass
 );
 
 cea_err cea_rocket_solution_get_moles(
@@ -591,10 +591,10 @@ cea_err cea_shock_solver_solve(
     const cea_real T0,
     const cea_real p0,
     const cea_real mach1_or_u1,
-    const bool use_mach,
-    const bool refl,
-    const bool incd_froz,
-    const bool refl_froz
+    const char use_mach,
+    const char refl,
+    const char incd_froz,
+    const char refl_froz
 );
 
 //----------------------------------------------------------------------
@@ -629,7 +629,7 @@ cea_err cea_shock_solution_get_weights(
     const cea_int np,
     const cea_int station,
     cea_real weights[],
-    const bool log
+    const char log
 );
 
 cea_err cea_shock_solution_get_species_amounts(
@@ -637,7 +637,7 @@ cea_err cea_shock_solution_get_species_amounts(
     const cea_int np,
     const cea_int station,
     cea_real amounts[],
-    const bool mass
+    const char mass
 );
 
 cea_err cea_shock_solution_get_moles(
@@ -690,7 +690,7 @@ cea_err cea_detonation_solver_solve(
     const cea_array weights,
     const cea_real T1,
     const cea_real p1,
-    const bool frozen
+    const char frozen
 );
 
 
@@ -719,14 +719,14 @@ cea_err cea_detonation_solution_get_weights(
     const cea_detonation_solution soln,
     const cea_int np,
     cea_real weights[],
-    const bool log
+    const char log
 );
 
 cea_err cea_detonation_solution_get_species_amounts(
     const cea_detonation_solution soln,
     const cea_int np,
     cea_real amounts[],
-    const bool mass
+    const char mass
 );
 
 cea_err cea_detonation_solution_get_moles(

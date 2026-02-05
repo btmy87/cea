@@ -1,15 +1,44 @@
 classdef CEA
     properties
         alias = "cea";
-    
+        warnFailure = true;
+        errFailure = false;
     end
     
     methods
-        function obj = CEA()
+        function obj = CEA(opts)
+            arguments
+                opts.alias (1, 1) string = "cea";
+                opts.warnFailure(1,1) {mustBeNumericOrLogical} = true
+                opts.errFailure(1,1) {mustBeNumericOrLogical} = false
+            end
             % Create 
             if ~libisloaded(obj.alias)
-                load_cea();
+                load_cea(alias=opts.alias);
             end
+
+            obj.warnFailure = opts.warnFailure;
+            obj.errFailure = obj.errFailure;
+        end
+
+        function checkval(obj, value, msg)
+            arguments
+                obj
+                value (1, 1) string
+                msg (1, 1) string = ""
+            end
+            % checks cea error values
+            if value ~= "CEA_SUCCESS"
+                if ~isempty(msg) && msg ~= ""
+                    fprintf("%s\n", msg);
+                end
+                if obj.errFailure
+                    error("CEA call failed: %s", value)
+                elseif obj.warnFailure
+                    warning("CEA call failed: %s", value)
+                end
+            end
+
         end
 
         function set_log_level(obj, logLevel)
@@ -22,7 +51,7 @@ classdef CEA
                      "CEA_LOG_CRITICAL";
             end
             err = calllib(obj.alias, "cea_set_log_level", char(logLevel));
-            assert(err == "CEA_SUCCESS");
+            obj.checkval(err);
         end
 
         function mix = mixture_create(obj, reactants)
@@ -36,41 +65,73 @@ classdef CEA
             reac = libpointer("stringPtrPtr", cellstr(reactants));
             err = calllib(obj.alias, "cea_mixture_create", ...
                 mix, n, reac);
-            assert(err == "CEA_SUCCESS", "Error in cea_mixture_create");
+            obj.checkval(err, "Error in cea_mixture_create");
+        end
+        function mix = mixture_create_from_reactants(obj, reactants, omitted)
+            arguments
+                obj
+                reactants (1, :) string
+                omitted (1, :) string
+            end
+            nr = length(reactants);
+            no = length(omitted);
+            mix = libpointer("voidPtr", 0);
+            reac = libpointer("stringPtrPtr", cellstr(reactants));
+            omit = libpointer("stringPtrPtr", cellstr(omitted));
+            err = calllib(obj.alias, "cea_mixture_create_from_reactants", ...
+                    mix, nr, reac, no, omit);
+            obj.checkval(err, "Error in cea_mixture_create_from_reactants");
+        end
+
+        function out = mixture_calc_property_multitemp(obj, mix, type, weights, temperatures)
+            outPtr = libpointer("doublePtr", 0);
+            err = calllib(obj.alias, "cea_mixture_calc_property_multitemp", ...
+                    mix, type, length(weights), weights, ...
+                    length(temperatures), temperatures, outPtr);
+            out = outPtr.Value;
+
+            obj.checkval(err, "Error in cea_mixture_calc_property_multitemp");
         end
            
         function opts = solver_opts_init(obj)
             opts = libpointer("cea_solver_opts", struct());
             err = calllib(obj.alias, "cea_solver_opts_init", opts);
-            assert(err == "CEA_SUCCESS", "Error in cea_solver_opts_init");
+            obj.checkval(err, "Error in cea_solver_opts_init");
         end
 
         function solver = eqsolver_create_with_options(obj, prod, opts)
             solver = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqsolver_create_with_options", ...
                 solver, prod, opts);
-            assert(err == "CEA_SUCCESS", "Error in eqsolver_create_with_options");
+            obj.checkval(err, "Error in eqsolver_create_with_options");
+        end
+
+        function solver = eqsolver_create_with_reactants(obj, prod, reac)
+            solver = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_eqsolver_create_with_reactants", ...
+                solver, prod, reac);
+            obj.checkval(err, "Error in eqsolver_create_with_reactants");
         end
 
         function solution = eqsolution_create(obj, solver)
             solution = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqsolution_create", ...
                 solution, solver);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqsolution_create");
+            obj.checkval(err, "Error in cea_eqsolution_create");
         end
 
         function partials = eqpartials_create(obj, solver)
             partials = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqpartials_create", ...
                 partials, solver);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqpartialscreate");
+            obj.checkval(err, "Error in cea_eqpartialscreate");
         end
 
         function weights = mixture_moles_to_weights(obj, reac, n, moles)
             weights = libpointer("doublePtr", zeros(1, n));
             err = calllib(obj.alias, "cea_mixture_moles_to_weights", ...
                 reac, n, moles, weights);
-            assert(err == "CEA_SUCCESS", "Error in cea_mixture_moles_to_weights");
+            obj.checkval(err, "Error in cea_mixture_moles_to_weights");
         end
 
         function OFRatio = mixture_chem_eq_ratio_to_of_ratio(...
@@ -78,7 +139,7 @@ classdef CEA
             ofptr = libpointer("doublePtr", 0);
             err = calllib(obj.alias, "cea_mixture_chem_eq_ratio_to_of_ratio", ...
                 reac, n, oxidWeights, fuelWeights, er, ofptr);
-            assert(err == "CEA_SUCCESS", "Error in cea_mixture_chem_eq_ratio_to_of_ratio");
+            obj.checkval(err, "Error in cea_mixture_chem_eq_ratio_to_of_ratio");
             OFRatio = ofptr.Value;
         end
 
@@ -87,44 +148,52 @@ classdef CEA
             weightsPtr = libpointer("doublePtr", zeros(1, n));
             err = calllib(obj.alias, "cea_mixture_of_ratio_to_weights", ...
                 reac, n, oxidWeights, fuelWeights, OFRatio, weightsPtr);
-            assert(err == "CEA_SUCCESS", "Error in cea_mixture_of_ratio_to_weights");
+            obj.checkval(err, "Error in cea_mixture_of_ratio_to_weights");
             weights = weightsPtr.Value;
+        end
+
+        function eqsolver_solve(obj, solver, prob, ...
+                state1, state2, weights, soln)
+            err = calllib(obj.alias, "cea_eqsolver_solve", ...
+                solver, prob, state1, state2, weights, soln);
+            obj.checkval(err, "Error in cea_eqsolver_solve");
         end
 
         function eqsolver_solve_with_partials(obj, solver, prob, ...
                 state1, state2, weights, soln, partials)
             err = calllib(obj.alias, "cea_eqsolver_solve_with_partials", ...
                 solver, prob, state1, state2, weights, soln, partials);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqsolver_solve_with_partials");
+            obj.checkval(err, "Error in cea_eqsolver_solve_with_partials");
         end
 
         function out = eqsolution_get_property(obj, soln, prop)
             outPtr = libpointer("doublePtr", 0.0);
             err = calllib(obj.alias, "cea_eqsolution_get_property", ...
                 soln, prop, outPtr);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqsolution_get_property");
+            obj.checkval(err, "Error in cea_eqsolution_get_property");
             out = outPtr.Value; 
         end
 
         function eqpartials_destroy(obj, partials)
             err = calllib(obj.alias, "cea_eqpartials_destroy", partials);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqpartials_destroy");
+            obj.checkval(err, "Error in cea_eqpartials_destroy");
         end
 
         function eqsolution_destroy(obj, soln)
             err = calllib(obj.alias, "cea_eqsolution_destroy", soln);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqsolution_destroy");
+            obj.checkval(err, "Error in cea_eqsolution_destroy");
         end
 
         function eqsolver_destroy(obj, solver)
             err = calllib(obj.alias, "cea_eqsolver_destroy", solver);
-            assert(err == "CEA_SUCCESS", "Error in cea_eqsolver_destroy");
+            obj.checkval(err, "Error in cea_eqsolver_destroy");
         end
 
         function mixture_destroy(obj, mix)
             err = calllib(obj.alias, "cea_mixture_destroy", mix);
-            assert(err == "CEA_SUCCESS", "Error in cea_mixture_destroy");
+            obj.checkval(err, "Error in cea_mixture_destroy");
         end
+
     end
 
 
