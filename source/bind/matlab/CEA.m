@@ -233,7 +233,7 @@ classdef CEA
             obj.checkval(err, "Error in cea_detonation_solver_destroy");
         end
 
-        function [solver, err] = shock_solver_create_with_reactants(obj, prod, reac);
+        function [solver, err] = shock_solver_create_with_reactants(obj, prod, reac)
             solver = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_shock_solver_create_with_reactants", ...
                 solver, prod, reac);
@@ -270,6 +270,48 @@ classdef CEA
             err = calllib(obj.alias, "cea_shock_solver_destroy", solver);
             obj.checkval(err, "Error in cea_shock_solver_destroy");
         end
+
+        function [solver, err] = rocket_solver_create_with_reactants(obj, prod, reac)
+            solver = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_rocket_solver_create_with_reactants", ...
+                          solver, prod, reac);
+            obj.checkval(err, "Error in cea_rocket_solver_create_with_reactants");
+        end
+
+        function [soln, err] = rocket_solution_create(obj, solver)
+            soln = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_rocket_solution_create", soln, solver);
+            obj.checkval(err, "Error in cea_rocket_solution_create");
+        end
+
+        function err = rocket_solver_solve_iac(obj, solver, soln, weights, ...
+                           pc, pi_p, n_pi_p, subar, nsubar, supar, nsupar, ...
+                           n_frz, hc_or_tc, use_hc, tc_est, use_tc_est)
+            err = calllib(obj.alias, "cea_rocket_solver_solve_iac", ...
+                          solver, soln, weights, pc, pi_p, n_pi_p, subar, ...
+                          nsubar, supar, nsupar,  n_frz, hc_or_tc, use_hc, ...
+                          tc_est, use_tc_est);
+            obj.checkval(err, "Error in cea_rocket_solver_solve_iac");
+        end
+
+        function [out, err] = rocket_solution_get_property(obj, soln, type, len)
+            outPtr = libpointer("doublePtr", zeros(1, len));
+            err = calllib(obj.alias, "cea_rocket_solution_get_property", ...
+                    soln, type, len, outPtr);
+            obj.checkval(err, "Error in cea_rocket_solution_get_property");
+            out = outPtr.Value;
+        end
+
+        function err = rocket_solution_destroy(obj, soln)
+            err = calllib(obj.alias, "cea_rocket_solution_destroy", soln);
+            obj.checkval(err, "Error in cea_rocket_solution_destroy");
+        end
+
+        function err = rocket_solver_destroy(obj, solver)
+            err = calllib(obj.alias, "cea_rocket_solver_destroy", solver);
+            obj.checkval(err, "Error in cea_rocket_solver_destroy");
+        end
+    
     end
 
 
