@@ -294,6 +294,17 @@ classdef CEA
             obj.checkval(err, "Error in cea_rocket_solver_solve_iac");
         end
 
+        function err = rocket_solver_solve_fac(obj, solver, soln, weights, ...
+                           pc, pi_p, n_pi_p, subar, nsubar, supar, nsupar, ...
+                           n_frz, hc_or_tc, use_hc, mdot_or_aca, use_mdot, ...
+                           tc_est, use_tc_est)
+            err = calllib(obj.alias, "cea_rocket_solver_solve_fac", ...
+                          solver, soln, weights, pc, pi_p, n_pi_p, subar, ...
+                          nsubar, supar, nsupar,  n_frz, hc_or_tc, use_hc, ...
+                          mdot_or_aca, use_mdot, tc_est, use_tc_est);
+            obj.checkval(err, "Error in cea_rocket_solver_solve_fac");
+        end
+
         function [out, err] = rocket_solution_get_property(obj, soln, type, len)
             outPtr = libpointer("doublePtr", zeros(1, len));
             err = calllib(obj.alias, "cea_rocket_solution_get_property", ...
@@ -310,6 +321,12 @@ classdef CEA
         function err = rocket_solver_destroy(obj, solver)
             err = calllib(obj.alias, "cea_rocket_solver_destroy", solver);
             obj.checkval(err, "Error in cea_rocket_solver_destroy");
+        end
+
+        function [num_pts, err] = rocket_solution_get_size(obj, soln)
+            num_pts_ptr = libpointer("int32Ptr", 0);
+            err = calllib(obj.alias, "cea_rocket_solution_get_size", soln, num_pts_ptr);
+            num_pts = num_pts_ptr.Value;
         end
     
     end
