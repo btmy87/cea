@@ -42,6 +42,10 @@ classdef CEA
         end
 
         function set_log_level(obj, logLevel)
+            % note that log will try to write to a console.
+            %   in 2024b and earlier versions of matlab on windows, 
+            %   you can load kernel32 and call AllocConsole
+            %   not working in 2025 and later
             arguments
                 obj
                 logLevel (1, 1) string {mustBeMember(logLevel, ...
@@ -54,7 +58,7 @@ classdef CEA
             obj.checkval(err);
         end
 
-        function mix = mixture_create(obj, reactants)
+        function [mix, err] = mixture_create(obj, reactants)
             arguments
                 obj
                 reactants (1, :) string;
@@ -67,7 +71,7 @@ classdef CEA
                 mix, n, reac);
             obj.checkval(err, "Error in cea_mixture_create");
         end
-        function mix = mixture_create_from_reactants(obj, reactants, omitted)
+        function [mix, err] = mixture_create_from_reactants(obj, reactants, omitted)
             arguments
                 obj
                 reactants (1, :) string
@@ -83,7 +87,7 @@ classdef CEA
             obj.checkval(err, "Error in cea_mixture_create_from_reactants");
         end
 
-        function out = mixture_calc_property_multitemp(obj, mix, type, weights, temperatures)
+        function [out, err] = mixture_calc_property_multitemp(obj, mix, type, weights, temperatures)
             outPtr = libpointer("doublePtr", 0);
             err = calllib(obj.alias, "cea_mixture_calc_property_multitemp", ...
                     mix, type, length(weights), weights, ...
@@ -93,48 +97,48 @@ classdef CEA
             obj.checkval(err, "Error in cea_mixture_calc_property_multitemp");
         end
            
-        function opts = solver_opts_init(obj)
+        function [opts, err] = solver_opts_init(obj)
             opts = libpointer("cea_solver_opts", struct());
             err = calllib(obj.alias, "cea_solver_opts_init", opts);
             obj.checkval(err, "Error in cea_solver_opts_init");
         end
 
-        function solver = eqsolver_create_with_options(obj, prod, opts)
+        function [solver, err] = eqsolver_create_with_options(obj, prod, opts)
             solver = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqsolver_create_with_options", ...
                 solver, prod, opts);
             obj.checkval(err, "Error in eqsolver_create_with_options");
         end
 
-        function solver = eqsolver_create_with_reactants(obj, prod, reac)
+        function [solver, err] = eqsolver_create_with_reactants(obj, prod, reac)
             solver = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqsolver_create_with_reactants", ...
                 solver, prod, reac);
             obj.checkval(err, "Error in eqsolver_create_with_reactants");
         end
 
-        function solution = eqsolution_create(obj, solver)
+        function [solution, err] = eqsolution_create(obj, solver)
             solution = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqsolution_create", ...
                 solution, solver);
             obj.checkval(err, "Error in cea_eqsolution_create");
         end
 
-        function partials = eqpartials_create(obj, solver)
+        function [partials, err] = eqpartials_create(obj, solver)
             partials = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_eqpartials_create", ...
                 partials, solver);
             obj.checkval(err, "Error in cea_eqpartialscreate");
         end
 
-        function weights = mixture_moles_to_weights(obj, reac, n, moles)
+        function [weights, err] = mixture_moles_to_weights(obj, reac, n, moles)
             weights = libpointer("doublePtr", zeros(1, n));
             err = calllib(obj.alias, "cea_mixture_moles_to_weights", ...
                 reac, n, moles, weights);
             obj.checkval(err, "Error in cea_mixture_moles_to_weights");
         end
 
-        function OFRatio = mixture_chem_eq_ratio_to_of_ratio(...
+        function [OFRatio, err] = mixture_chem_eq_ratio_to_of_ratio(...
                 obj, reac, n, oxidWeights, fuelWeights, er)
             ofptr = libpointer("doublePtr", 0);
             err = calllib(obj.alias, "cea_mixture_chem_eq_ratio_to_of_ratio", ...
@@ -143,7 +147,7 @@ classdef CEA
             OFRatio = ofptr.Value;
         end
 
-        function weights = mixture_of_ratio_to_weights(...
+        function [weights, err] = mixture_of_ratio_to_weights(...
                 obj, reac, n, oxidWeights, fuelWeights, OFRatio)
             weightsPtr = libpointer("doublePtr", zeros(1, n));
             err = calllib(obj.alias, "cea_mixture_of_ratio_to_weights", ...
@@ -152,21 +156,21 @@ classdef CEA
             weights = weightsPtr.Value;
         end
 
-        function eqsolver_solve(obj, solver, prob, ...
+        function err = eqsolver_solve(obj, solver, prob, ...
                 state1, state2, weights, soln)
             err = calllib(obj.alias, "cea_eqsolver_solve", ...
                 solver, prob, state1, state2, weights, soln);
             obj.checkval(err, "Error in cea_eqsolver_solve");
         end
 
-        function eqsolver_solve_with_partials(obj, solver, prob, ...
+        function err = eqsolver_solve_with_partials(obj, solver, prob, ...
                 state1, state2, weights, soln, partials)
             err = calllib(obj.alias, "cea_eqsolver_solve_with_partials", ...
                 solver, prob, state1, state2, weights, soln, partials);
             obj.checkval(err, "Error in cea_eqsolver_solve_with_partials");
         end
 
-        function out = eqsolution_get_property(obj, soln, prop)
+        function [out, err] = eqsolution_get_property(obj, soln, prop)
             outPtr = libpointer("doublePtr", 0.0);
             err = calllib(obj.alias, "cea_eqsolution_get_property", ...
                 soln, prop, outPtr);
@@ -174,59 +178,98 @@ classdef CEA
             out = outPtr.Value; 
         end
 
-        function eqpartials_destroy(obj, partials)
+        function err = eqpartials_destroy(obj, partials)
             err = calllib(obj.alias, "cea_eqpartials_destroy", partials);
             obj.checkval(err, "Error in cea_eqpartials_destroy");
         end
 
-        function eqsolution_destroy(obj, soln)
+        function err = eqsolution_destroy(obj, soln)
             err = calllib(obj.alias, "cea_eqsolution_destroy", soln);
             obj.checkval(err, "Error in cea_eqsolution_destroy");
         end
 
-        function eqsolver_destroy(obj, solver)
+        function err = eqsolver_destroy(obj, solver)
             err = calllib(obj.alias, "cea_eqsolver_destroy", solver);
             obj.checkval(err, "Error in cea_eqsolver_destroy");
         end
 
-        function mixture_destroy(obj, mix)
+        function err = mixture_destroy(obj, mix)
             err = calllib(obj.alias, "cea_mixture_destroy", mix);
             obj.checkval(err, "Error in cea_mixture_destroy");
         end
 
-        function solver = detonation_solver_create_with_reactants(obj, prod, reac)
+        function [solver, err] = detonation_solver_create_with_reactants(obj, prod, reac)
             solver = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_detonation_solver_create_with_reactants", ...
                     solver, prod, reac);
             obj.checkval(err, "Error in cea_detonation_solver_create_with_reactants");
         end
 
-        function soln = detonation_solution_create(obj)
+        function [soln, err] = detonation_solution_create(obj)
             soln = libpointer("voidPtr", 0);
             err = calllib(obj.alias, "cea_detonation_solution_create", soln);
             obj.checkval(err, "Error in cea_detonation_solution_create");
         end
-        function detonation_solver_solve(obj, solver, soln, weights, T0, p0, flag)
+        function err = detonation_solver_solve(obj, solver, soln, weights, T0, p0, flag)
             err = calllib(obj.alias, "cea_detonation_solver_solve", solver, soln, ...
                     weights, T0, p0, flag);
             obj.checkval(err, "Error in cea_detonation_solver_solve");
         end
-        function out = detonation_solution_get_property(obj, soln, type, flag)
+        function [out, err] = detonation_solution_get_property(obj, soln, type, flag)
             outPtr = libpointer("doublePtr", 0.0);
             err = calllib(obj.alias, "cea_detonation_solution_get_property", ...
                     soln, type, flag, outPtr);
             obj.checkval(err, "Error in cea_detonation_solution_get_property");
             out = outPtr.Value;
         end
-        function detonation_solution_destroy(obj, soln)
+
+        function err = detonation_solution_destroy(obj, soln)
             err = calllib(obj.alias, "cea_detonation_solution_destroy", soln);
             obj.checkval(err, "Error in cea_detonation_solution_destroy");
         end
-        function detonation_solver_destroy(obj, solver)
+
+        function err = detonation_solver_destroy(obj, solver)
             err = calllib(obj.alias, "cea_detonation_solver_destroy", solver);
             obj.checkval(err, "Error in cea_detonation_solver_destroy");
         end
 
+        function [solver, err] = shock_solver_create_with_reactants(obj, prod, reac);
+            solver = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_shock_solver_create_with_reactants", ...
+                solver, prod, reac);
+            obj.checkval(err, "Error in cea_shock_solver_create_with_reactants");
+        end
+
+        function [soln, err] = shock_solution_create(obj, num_pts)
+            soln = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_shock_solution_create", soln, num_pts);
+            obj.checkval(err, "Error in cea_shock_solution_create");
+        end
+
+        function err = shock_solver_solve(obj, solver, soln, weights, T0,  p0, mach1_or_u1, ...
+                                    use_mach, refl, incd_froz, refl_froz)
+            err = calllib(obj.alias, "cea_shock_solver_solve", solver, soln, weights, ...
+                          T0,  p0, mach1_or_u1, use_mach, refl, incd_froz, refl_froz);
+            obj.checkval(err, "Error in cea_shock_solution_create");
+        end
+
+        function [out, err] = shock_solution_get_property(obj, soln, type, len)
+            outPtr = libpointer("doublePtr", zeros(1, len));
+            err = calllib(obj.alias, "cea_shock_solution_get_property", ...
+                    soln, type, len, outPtr);
+            obj.checkval(err, "Error in cea_shock_solution_get_property");
+            out = outPtr.Value;
+        end
+
+        function err = shock_solution_destroy(obj, soln)
+            err = calllib(obj.alias, "cea_shock_solution_destroy", soln);
+            obj.checkval(err, "Error in cea_shock_solution_destroy");
+        end
+
+        function err = shock_solver_destroy(obj, solver)
+            err = calllib(obj.alias, "cea_shock_solver_destroy", solver);
+            obj.checkval(err, "Error in cea_shock_solver_destroy");
+        end
     end
 
 
