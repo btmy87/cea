@@ -194,6 +194,39 @@ classdef CEA
             obj.checkval(err, "Error in cea_mixture_destroy");
         end
 
+        function solver = detonation_solver_create_with_reactants(obj, prod, reac)
+            solver = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_detonation_solver_create_with_reactants", ...
+                    solver, prod, reac);
+            obj.checkval(err, "Error in cea_detonation_solver_create_with_reactants");
+        end
+
+        function soln = detonation_solution_create(obj)
+            soln = libpointer("voidPtr", 0);
+            err = calllib(obj.alias, "cea_detonation_solution_create", soln);
+            obj.checkval(err, "Error in cea_detonation_solution_create");
+        end
+        function detonation_solver_solve(obj, solver, soln, weights, T0, p0, flag)
+            err = calllib(obj.alias, "cea_detonation_solver_solve", solver, soln, ...
+                    weights, T0, p0, flag);
+            obj.checkval(err, "Error in cea_detonation_solver_solve");
+        end
+        function out = detonation_solution_get_property(obj, soln, type, flag)
+            outPtr = libpointer("doublePtr", 0.0);
+            err = calllib(obj.alias, "cea_detonation_solution_get_property", ...
+                    soln, type, flag, outPtr);
+            obj.checkval(err, "Error in cea_detonation_solution_get_property");
+            out = outPtr.Value;
+        end
+        function detonation_solution_destroy(obj, soln)
+            err = calllib(obj.alias, "cea_detonation_solution_destroy", soln);
+            obj.checkval(err, "Error in cea_detonation_solution_destroy");
+        end
+        function detonation_solver_destroy(obj, solver)
+            err = calllib(obj.alias, "cea_detonation_solver_destroy", solver);
+            obj.checkval(err, "Error in cea_detonation_solver_destroy");
+        end
+
     end
 
 
