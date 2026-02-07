@@ -77,7 +77,7 @@ for ir = 1:length(of_ratios)
 end
 
 cea.eqpartials_destroy(partials);
-cea.eqsolution_destroy(soln);
+%cea.eqsolution_destroy(soln);
 cea.eqsolver_destroy(solver);
 cea.mixture_destroy(prod);
 cea.mixture_destroy(reac);

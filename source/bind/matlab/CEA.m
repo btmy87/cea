@@ -117,10 +117,13 @@ classdef CEA
             obj.checkval(err, "Error in eqsolver_create_with_reactants");
         end
 
-        function [solution, err] = eqsolution_create(obj, solver)
-            solution = libpointer("voidPtr", 0);
+        function [soln, err] = eqsolution_create(obj, solver)
+            % solution = libpointer("cea_eqsolution", 0);
+            soln = libpointer("cea_eqsolution_tPtr");
+            %soln.Value.T = 0.0; % easiest way to make structure not a null pointer
+
             err = calllib(obj.alias, "cea_eqsolution_create", ...
-                solution, solver);
+                soln, solver);
             obj.checkval(err, "Error in cea_eqsolution_create");
         end
 

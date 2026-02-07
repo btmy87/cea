@@ -19,7 +19,7 @@ typedef enum { CEA_ERROR_CODE_ENUM               } cea_error_code;
 typedef void*              cea_reactant;
 typedef void*              cea_mixture;
 typedef void*              cea_eqsolver;
-typedef void*              cea_eqsolution;
+//typedef void*              cea_eqsolution;
 typedef void*              cea_eqpartials;
 typedef void*              cea_rocket_solver;
 typedef void*              cea_rocket_solution;
@@ -47,6 +47,205 @@ typedef struct {
     cea_real temperature;
     cea_string temperature_units;
 } cea_reactant_input;
+
+// fortran array descriptor format
+// int64 addr
+// int64 elem_size
+// int64 reserved
+// int64 flags
+// int64 dimensions
+// int64 reserved
+// int64 num_elems, dim 1
+// int64 mem_dist, dim 1
+// int64, lower_bound, dim 1
+// last 3 fields are repeated for each dimension
+typedef long long int64;
+typedef struct {
+        double T;
+        double *nj;
+        int64 nj_elem_size;
+        int64 nj_reserved1;
+        int64 nj_flags;
+        int64 nj_dimensions;
+        int64 nj_reserved2;
+        int64 nj_num1;
+        int64 nj_dist1;
+        int64 nj_lb1;
+        double n;
+        int thermo_num_species; int thermo_num_species_pad;
+        double *thermo_cp;
+        int64 thermo_cp_elem_size;
+        int64 thermo_cp_reserved1;
+        int64 thermo_cp_flags;
+        int64 thermo_cp_dimensions;
+        int64 thermo_cp_reserved2;
+        int64 thermo_cp_num1;
+        int64 thermo_cp_dist1;
+        int64 thermo_cp_lb1;
+        double *thermo_cv;
+        int64 thermo_cv_elem_size;
+        int64 thermo_cv_reserved1;
+        int64 thermo_cv_flags;
+        int64 thermo_cv_dimensions;
+        int64 thermo_cv_reserved2;
+        int64 thermo_cv_num1;
+        int64 thermo_cv_dist1;
+        int64 thermo_cv_lb1;
+        double *thermo_enthalpy;
+        int64 thermo_enthalpy_elem_size;
+        int64 thermo_enthalpy_reserved1;
+        int64 thermo_enthalpy_flags;
+        int64 thermo_enthalpy_dimensions;
+        int64 thermo_enthalpy_reserved2;
+        int64 thermo_enthalpy_num1;
+        int64 thermo_enthalpy_dist1;
+        int64 thermo_enthalpy_lb1;
+        double *thermo_entropy;
+        int64 thermo_entropy_elem_size;
+        int64 thermo_entropy_reserved1;
+        int64 thermo_entropy_flags;
+        int64 thermo_entropy_dimensions;
+        int64 thermo_entropy_reserved2;
+        int64 thermo_entropy_num1;
+        int64 thermo_entropy_dist1;
+        int64 thermo_entropy_lb1;
+        double *thermo_energy;
+        int64 thermo_energy_elem_size;
+        int64 thermo_energy_reserved1;
+        int64 thermo_energy_flags;
+        int64 thermo_energy_dimensions;
+        int64 thermo_energy_reserved2;
+        int64 thermo_energy_num1;
+        int64 thermo_energy_dist1;
+        int64 thermo_energy_lb1;
+        double *ln_nj;
+        int64 ln_nj_elem_size;
+        int64 ln_nj_reserved1;
+        int64 ln_nj_flags;
+        int64 ln_nj_dimensions;
+        int64 ln_nj_reserved2;
+        int64 ln_nj_num1;
+        int64 ln_nj_dist1;
+        int64 ln_nj_lb1;
+        double *pi;
+        int64 pi_elem_size;
+        int64 pi_reserved1;
+        int64 pi_flags;
+        int64 pi_dimensions;
+        int64 pi_reserved2;
+        int64 pi_num1;
+        int64 pi_dist1;
+        int64 pi_lb1;
+        double *pi_prev;
+        int64 pi_prev_elem_size;
+        int64 pi_prev_reserved1;
+        int64 pi_prev_flags;
+        int64 pi_prev_dimensions;
+        int64 pi_prev_reserved2;
+        int64 pi_prev_num1;
+        int64 pi_prev_dist1;
+        int64 pi_prev_lb1;
+        double pi_e;
+        double dpi_e;
+        double *dln_nj;
+        int64 dln_nj_elem_size;
+        int64 dln_nj_reserved1;
+        int64 dln_nj_flags;
+        int64 dln_nj_dimensions;
+        int64 dln_nj_reserved2;
+        int64 dln_nj_num1;
+        int64 dln_nj_dist1;
+        int64 dln_nj_lb1;
+        double *dnj_c;
+        int64 dnj_c_elem_size;
+        int64 dnj_c_reserved1;
+        int64 dnj_c_flags;
+        int64 dnj_c_dimensions;
+        int64 dnj_c_reserved2;
+        int64 dnj_c_num1;
+        int64 dnj_c_dist1;
+        int64 dnj_c_lb1;
+        double dln_n;
+        double dln_T;
+        double *G;
+        int64 G_elem_size;
+        int64 G_reserved1;
+        int64 G_flags;
+        int64 G_dimensions;
+        int64 G_reserved2;
+        int64 G_num1;
+        int64 G_dist1;
+        int64 G_lb1;
+        int64 G_num2;
+        int64 G_dist2;
+        int64 G_lb2;
+        char type[8];
+        double state1;
+        double state2;
+        double *b0;
+        int64 b0_elem_size;
+        int64 b0_reserved1;
+        int64 b0_flags;
+        int64 b0_dimensions;
+        int64 b0_reserved2;
+        int64 b0_num1;
+        int64 b0_dist1;
+        int64 b0_lb1;
+        int *is_active;
+        int64 is_active_elem_size;
+        int64 is_active_reserved1;
+        int64 is_active_flags;
+        int64 is_active_dimensions;
+        int64 is_active_reserved2;
+        int64 is_active_num1;
+        int64 is_active_dist1;
+        int64 is_active_lb1;
+        int j_liq; int j_sol;
+        int j_switch; int last_cond_idx;
+        int gas_converged; int condensed_converged;
+        int moles_converged; int element_converged;
+        int temperature_converged; int entropy_converged;
+        int pi_converged; int ions_converged;
+        int converged; int times_converged;
+        double *mole_fractions;
+        int64 mole_fractions_elem_size;
+        int64 mole_fractions_reserved1;
+        int64 mole_fractions_flags;
+        int64 mole_fractions_dimensions;
+        int64 mole_fractions_reserved2;
+        int64 mole_fractions_num1;
+        int64 mole_fractions_dist1;
+        int64 mole_fractions_lb1;
+        double *mass_fractions;
+        int64 mass_fractions_elem_size;
+        int64 mass_fractions_reserved1;
+        int64 mass_fractions_flags;
+        int64 mass_fractions_dimensions;
+        int64 mass_fractions_reserved2;
+        int64 mass_fractions_num1;
+        int64 mass_fractions_dist1;
+        int64 mass_fractions_lb1;
+        double density; // (kg/m^3)
+        double pressure; // bar
+        double volume; // specific volume
+        double M; // 1/n, Eq. 2.3a/b
+        double MW; // Eq 2.4 a/b
+        double enthalpy; // kJ/kg
+        double energy;
+        double gibbs_energy;
+        double entropy; // kJ/kg-K
+        double gamma_s;
+        double viscosity;
+        double cp_fr;
+        double cp_eq;
+        double cv_fr;
+        double cv_eq;
+        double conductivity_fr;
+        double conductivity_eq;
+        double Pr_fr;
+        double Pr_eq;
+} cea_eqsolution_t;
+typedef cea_eqsolution_t* cea_eqsolution;
 
 // Struct types for optional arguments
 typedef struct {
