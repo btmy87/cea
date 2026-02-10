@@ -23,7 +23,7 @@ add_installed_library(cea_core
 )
 target_link_libraries(cea_core PRIVATE fbasics::core)
 
-if(CEA_BUILD_TESTING AND NOT CMAKE_HOST_WIN32)
+if(CEA_BUILD_TESTING AND PFUNIT_FOUND)
     add_pfunit_ctest(cea_core_test
         TEST_SOURCES
             thermo_test.pf

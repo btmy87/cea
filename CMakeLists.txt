@@ -46,8 +46,8 @@ endif()
 
 # Testing
 option(CEA_BUILD_TESTING "Build test harness for CEA" ${PROJECT_IS_TOP_LEVEL})
-if(CEA_BUILD_TESTING AND NOT CMAKE_HOST_WIN32)
-    find_package(PFUNIT REQUIRED)
+if(CEA_BUILD_TESTING)
+    find_package(PFUNIT OPTIONAL)
 endif()
 include(CTest)
 
