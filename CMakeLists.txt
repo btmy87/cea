@@ -53,7 +53,7 @@ endif()
 # Testing
 option(CEA_BUILD_TESTING "Build test harness for CEA" ${PROJECT_IS_TOP_LEVEL})
 if(CEA_BUILD_TESTING)
-    find_package(PFUNIT OPTIONAL)
+    find_package(PFUNIT)
 endif()
 include(CTest)
 
