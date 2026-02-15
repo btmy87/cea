@@ -464,7 +464,7 @@ jobs:
           cmake --build build/extern/gfe --target install
 
       - name: Configure (linux)
-        if: ${{runner.os != 'Windows'}}
+        if: ${{runner.os != 'Windows' || matrix.toolchain.ccompiler != 'msvc'}} 
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_PREFIX_PATH=build/install \
@@ -472,24 +472,10 @@ jobs:
             -DCEA_BUILD_TESTING=ON \
             -DCEA_ENABLE_BIND_C=ON \
             -DCEA_ENABLE_BIND_CXX=OFF \
-            -DCEA_ENABLE_BIND_PYTHON=ON \
-            -DCEA_ENABLE_BIND_MATLAB=OFF \
-            -DCEA_ENABLE_BIND_EXCEL=OFF \
-            -DCMAKE_Fortran_FLAGS="-ffree-line-length-none"
-
-      - name: Configure (normal)
-        if: ${{runner.os == 'Windows' && matrix.toolchain.ccompiler != 'msvc'}}
-        run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_PREFIX_PATH=build/install \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCEA_BUILD_TESTING=ON \
-            -DCEA_ENABLE_BIND_C=ON \
-            -DCEA_ENABLE_BIND_CXX=OFF \
             -DCEA_ENABLE_BIND_PYTHON=OFF \
             -DCEA_ENABLE_BIND_MATLAB=OFF \
             -DCEA_ENABLE_BIND_EXCEL=OFF \
-            -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+            -DCMAKE_Fortran_FLAGS="-ffree-line-length-none"
 
       - name: Configure (msvc)
         if: ${{runner.os == 'Windows' && matrix.toolchain.ccompiler == 'msvc'}}
