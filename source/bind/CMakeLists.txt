@@ -42,6 +42,10 @@ if (CEA_ENABLE_BIND_PYTHON)
     add_cython_target(libcea libcea.pyx)
     add_library(libcea MODULE ${libcea})
     python_extension_module(libcea)
+    if(APPLE)
+        # Ensure Python symbols are resolved by the interpreter at load time.
+        target_link_options(libcea PRIVATE "-undefined" "dynamic_lookup")
+    endif()
 
     # Ensure proper linking on Windows
     if (WIN32)
@@ -50,6 +54,13 @@ if (CEA_ENABLE_BIND_PYTHON)
             PREFIX ""
         )
         target_link_libraries(libcea ${PYTHON_LIBRARIES})
+        # numpy headers include a workaround for intel compilers, at least as of 2.4.1
+        # They are triggered if __INTEL_COMPILER is defined, but that isn't defined by
+        # default if using ifc
+        if (CMAKE_C_COMPILER_ID STREQUAL "IntelLLVM" OR CMAKE_C_COMPILER_ID STREQUAL "Intel")
+            target_compile_options(libcea PUBLIC "-D__INTEL_COMPILER")
+            target_link_options(libcea PUBLIC "/static")
+        endif()
     endif()
 
     # set rpath for dynmaic linkers on non-windows platforms
