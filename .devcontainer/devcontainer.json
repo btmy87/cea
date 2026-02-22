@@ -1,0 +1,8 @@
+{
+  "name": "default",
+  "build": {
+    "dockerfile": "dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "./devcontainer/setup-conda.sh && ./devcontainer/build-gfe.sh"
+}

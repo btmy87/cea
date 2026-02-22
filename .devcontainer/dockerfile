@@ -1,0 +1,144 @@
+
+ARG BASEIMAGE="ubuntu:latest"
+FROM ${BASEIMAGE}
+ARG CC="gcc"
+ARG CXX="g++"
+ARG FC="gfortran"
+ARG WORKDIR="/work"
+ARG BUILDDIR="build-dev"
+ARG BUILDTYPE="Debug"
+WORKDIR ${WORKDIR}
+
+ENV MINIFORGE_SRC_DIR="https://github.com/conda-forge/miniforge/releases/latest/download"
+ENV INSTALLDIR=${BUILDDIR}/install
+
+RUN if command -v 'apt-get'; then \
+      apt-get update && apt-get install -y --no-install-recommends \
+        bash \
+        binutils \
+        ca-certificates \
+        clang \
+        git \
+        m4 \
+        make \
+        vim \
+        wget \
+        && if [ "${FC}" = "flang-new" ]; then \
+          apt-get install -y --no-install-recommends flang;\
+        fi \
+        && if [ "${FC}" = "flang" ]; then \
+          apt-get install -y --no-install-recommends flang;\
+        fi; \
+    fi \
+    && if command -v 'dnf'; then \
+      dnf -y update && dnf -y install \
+        bash \
+        binutils \
+        ca-certificates \
+        clang \
+        git \
+        m4 \
+        make \
+        vim \
+        wget \
+      && dnf clean all; \
+    fi \
+    && mkdir -p ./miniforge \
+    && wget -O ./miniforge.sh "${MINIFORGE_SRC_DIR}/Miniforge3-$(uname)-$(uname -m).sh" \
+    && bash ./miniforge.sh -b -u -p ${WORKDIR}/miniforge \
+    && rm miniforge.sh
+ENV PATH=${WORKDIR}/miniforge/envs/cea-dev/lib:${WORKDIR}/miniforge/bin:${WORKDIR}/miniforge/lib:$PATH
+
+# checkout repositories
+RUN git clone --branch chore/pythondeps --single-branch https://github.com/btmy87/cea.git \
+    && git clone https://github.com/Goddard-Fortran-Ecosystem/GFE cea/extern/gfe \
+    && git -C cea/extern/gfe submodule update --init 
+
+# Charge directory into repository
+WORKDIR ${WORKDIR}/cea
+ 
+# create environment and setup for interactive use
+RUN conda env create -f=environment.yml \
+    && conda init bash \
+    && echo "conda activate cea-dev" >> ~/.bashrc
+
+SHELL ["conda", "run", "-n", "cea-dev", "/bin/bash", "-c"]
+
+RUN if [ ${FC} = "ifx" ] ||  [ ${CC} = "icx" ]; then \
+      conda install -y \
+        dpcpp_linux-64 \
+        ifx_linux-64; \
+    fi
+
+# build GFE tools
+RUN cmake -S extern/gfe -B ${BUILDDIR}/extern/gfe -G Ninja\
+        -DCMAKE_C_COMPILER=${CC} \
+        -DCMAKE_CXX_COMPILER=${CXX} \
+        -DCMAKE_Fortran_COMPILER=${FC} \
+        -DCMAKE_INSTALL_PREFIX=${INSTALLDIR} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DSKIP_MPI=YES \
+        -DENABLE_MPI=OFF \
+        -DSKIP_OPENMP=YES \
+        -DSKIP_FHAMCREST=YES \
+        -DSKIP_ESMF=YES \
+        -DSKIP_ROBUST=YES
+        
+RUN cmake --build ${BUILDDIR}/extern/gfe --target install
+
+# build CEA
+RUN npinclude=$(python -c "import numpy; print(numpy.get_include())") \
+    && pyinclude=$(python -c "from sysconfig import get_paths as gp; print(gp()['include'])") \
+    && pylib=$(python -c "import sysconfig; import pathlib; print(pathlib.Path(sysconfig.get_config_var('LIBDIR')) / sysconfig.get_config_var('INSTSONAME'))") \
+    && echo "npinclude=${npinclude}" \
+    && echo "pyinclude=${pyinclude}" \
+    && echo "pylib=${pylib}" \
+    && FFLAGS="" \
+    && if [ "${FC}"  = "gfortran" ]; then FFLAGS="-ffree-line-length-none"; fi \
+    && cmake -S . -B ${BUILDDIR} -G Ninja\
+        -DCMAKE_BUILD_TYPE=${BUILDTYPE} \
+        -DCMAKE_C_COMPILER=${CC} \
+        -DCMAKE_CXX_COMPILER=${CXX} \
+        -DCMAKE_Fortran_COMPILER=${FC} \
+        -DCMAKE_INSTALL_PREFIX=${INSTALLDIR} \
+        -DPYTHON_INCLUDE_DIR=${pyinclude} \
+        -DPYTHON_LIBRARY=${pylib} \
+        -DNumPy_INCLUDE_DIR=${npinclude} \
+        -DCEA_ENABLE_BIND_C=TRUE \
+        -DCEA_ENABLE_BIND_PYTHON=TRUE \
+        -DCEA_ENABLE_BIND_MATLAB=TRUE \
+        -DCMAKE_Fortran_FLAGS=${FFLAGS}
+
+RUN cmake --build ${BUILDDIR}
+RUN cmake --install ${BUILDDIR}
+ENV PATH=$PATH:${WORKDIR}/cea/${INSTALLDIR}/bin
+RUN pip install -e .
+
+# call ctest, and keep docker running even if it fails
+RUN ctest --test-dir ${WORKDIR}/cea/${BUILDDIR} --output-on-failure || true
+
+# run python tests
+RUN python test/main_interface/test_main.py
+RUN pytest source/bind/python/tests -v
+    
+# print os info
+RUN echo "" \
+    && echo "Build Info: $(date)" \
+    && cat /etc/os-release \
+    && echo "" \
+    && uname -a \
+    && echo "" \
+    && python --version \
+    && echo "" \
+    && if [ "${CC}"  = "gcc"      ]; then gcc --version; fi \
+    && if [ "${CXX}" = "g++"      ]; then g++ --version; fi \
+    && if [ "${FC}"  = "gfortran" ]; then gfortran --version; fi \
+    && if [ "${CC}"  = "icx"      ]; then icx --version; fi \
+    && if [ "${CXX}" = "icpx"     ]; then icpx --version; fi \
+    && if [ "${FC}"  = "ifx"      ]; then ifx --version; fi \
+    && if [ "${CC}"  = "clang"    ]; then clang --version; fi \
+    && if [ "${CXX}" = "clang++"  ]; then clang++ --version; fi \
+    && if [ "${FC}"  = "flang"    ]; then flang --version; fi \
+    && if [ "${FC}"  = "flang-new"]; then flang-new --version; fi
+#
+#
