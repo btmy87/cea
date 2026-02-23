@@ -4,7 +4,8 @@
 
 # Create conda environment
 conda env create -f=environment.yml
-conda init bash \
+conda init 
+conda activate cea-dev
 echo "conda activate cea-dev" >> ~/.bashrc
 
 # Optionally configure intel compilers
