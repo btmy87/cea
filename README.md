@@ -72,7 +72,7 @@ the CEA install directory to the user's `PATH` environment variable, e.g.:
 Once properly configured, you should be able to run the provided sample problems
 from any working directory as follows:
 
-    cea <cea_source_dir>/samples/rp1311_examples.inp
+    cea <cea_source_dir>/samples/rp1311_examples
 
 ### Build Prerequisites
 
@@ -129,9 +129,11 @@ Legacy CLI (classic `.inp` deck - run this from the `build/source` directory):
 
     ./cea ../samples/example1
 
+Note that specifying the `.inp` extension for input files is optional.
+
 Python example (runs the H2/O2 case after installing the Python bindings):
 
-    python source/bind/python/cea/samples/h2_02.py
+    python source/bind/python/cea/samples/h2_o2.py
 
 
 ## Database Generation
