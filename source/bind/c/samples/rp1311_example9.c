@@ -61,7 +61,7 @@ int main(void)
   cea_real *weights = calloc(nr, sizeof(cea_real));
   cea_mixture_of_ratio_to_weights(reac, LEN(reactants), oxidant_weights, fuel_weights, of_ratio, weights);
 
-  cea_real pip[] = {10.0, 100.0, 1000.0};
+  cea_real pip[] = {10.0, 100.0, 1000.0}; // const or non-const array can be passed
   const cea_real subar[] = {0.0};
   const cea_real supar[] = {25.0, 50.0, 75.0};
   const cea_real pc = 53.3172;
