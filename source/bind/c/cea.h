@@ -303,7 +303,7 @@ extern "C"
       const cea_equilibrium_type type,
       const cea_real state1,
       const cea_real state2,
-      const cea_array amounts,
+      const cea_real amounts[],
       cea_eqsolution soln);
 
   cea_err cea_eqsolver_solve_with_partials(
@@ -311,7 +311,7 @@ extern "C"
       const cea_equilibrium_type type,
       const cea_real state1,
       const cea_real state2,
-      const cea_array amounts,
+      const cea_real amounts[],
       cea_eqsolution soln,
       cea_eqpartials eqpartials);
 
@@ -430,14 +430,14 @@ extern "C"
   cea_err cea_rocket_solver_solve_iac(
       const cea_rocket_solver solver,
       cea_rocket_solution soln,
-      const cea_array weights,
+      const cea_real weights[],
       const cea_real pc,
       // Optional: ignored when n_pi_p == 0 (pi_p may be NULL)
-      const cea_array pi_p,
+      const cea_real pi_p[],
       const cea_int n_pi_p,
-      const cea_array subar,
+      const cea_real subar[],
       const cea_int nsubar,
-      const cea_array supar,
+      const cea_real supar[],
       const cea_int nsupar,
       const cea_int n_frz,
       const cea_real hc_or_tc,
@@ -448,14 +448,14 @@ extern "C"
   cea_err cea_rocket_solver_solve_fac(
       const cea_rocket_solver solver,
       cea_rocket_solution soln,
-      const cea_array weights,
+      const cea_real weights[],
       const cea_real pc,
       // Optional: ignored when n_pi_p == 0 (pi_p may be NULL)
-      const cea_array pi_p,
+      const cea_real pi_p[],
       const cea_int n_pi_p,
-      const cea_array subar,
+      const cea_real subar[],
       const cea_int nsubar,
-      const cea_array supar,
+      const cea_real supar[],
       const cea_int nsupar,
       const cea_int n_frz,
       const cea_real hc_or_tc,
@@ -554,7 +554,7 @@ extern "C"
   cea_err cea_shock_solver_solve(
       const cea_shock_solver solver,
       cea_shock_solution soln,
-      const cea_array weights,
+      const cea_real weights[],
       const cea_real T0,
       const cea_real p0,
       const cea_real mach1_or_u1,
@@ -640,7 +640,7 @@ extern "C"
   cea_err cea_detonation_solver_solve(
       const cea_detonation_solver solver,
       cea_detonation_solution soln,
-      const cea_array weights,
+      const cea_real weights[],
       const cea_real T1,
       const cea_real p1,
       const bool frozen);
