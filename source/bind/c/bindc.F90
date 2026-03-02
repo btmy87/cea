@@ -3,6 +3,7 @@ module cea_bindc
     use cea, snl => species_name_len, &
              enl => element_name_len, &
              wp => real_kind
+    use cea_equilibrium, only: EqDerivatives
     use cea_param, only: empty_dp, gas_constant, get_data_search_dirs
     use cea_input, only: ReactantInput
     use cea_mixture, only: names_match
@@ -22,6 +23,41 @@ module cea_bindc
         enumerator :: CEA_TV = 3
         enumerator :: CEA_UV = 4
         enumerator :: CEA_SV = 5
+    end enum
+
+    enum, bind(c)
+        enumerator :: CEA_DERIV_ANALYTIC = 0
+        enumerator :: CEA_DERIV_FD = 1
+    end enum
+
+    enum, bind(c)
+        enumerator :: CEA_DERIV_DT_DSTATE1 = 0
+        enumerator :: CEA_DERIV_DT_DSTATE2 = 1
+        enumerator :: CEA_DERIV_DN_DSTATE1 = 2
+        enumerator :: CEA_DERIV_DN_DSTATE2 = 3
+        enumerator :: CEA_DERIV_DH_DSTATE1 = 4
+        enumerator :: CEA_DERIV_DH_DSTATE2 = 5
+        enumerator :: CEA_DERIV_DU_DSTATE1 = 6
+        enumerator :: CEA_DERIV_DU_DSTATE2 = 7
+        enumerator :: CEA_DERIV_DG_DSTATE1 = 8
+        enumerator :: CEA_DERIV_DG_DSTATE2 = 9
+        enumerator :: CEA_DERIV_DS_DSTATE1 = 10
+        enumerator :: CEA_DERIV_DS_DSTATE2 = 11
+    end enum
+
+    enum, bind(c)
+        enumerator :: CEA_DERIV_DT_DW0 = 0
+        enumerator :: CEA_DERIV_DN_DW0 = 1
+        enumerator :: CEA_DERIV_DNJ_DSTATE1 = 2
+        enumerator :: CEA_DERIV_DNJ_DSTATE2 = 3
+        enumerator :: CEA_DERIV_DH_DW0 = 4
+        enumerator :: CEA_DERIV_DU_DW0 = 5
+        enumerator :: CEA_DERIV_DG_DW0 = 6
+        enumerator :: CEA_DERIV_DS_DW0 = 7
+    end enum
+
+    enum, bind(c)
+        enumerator :: CEA_DERIV_DNJ_DW0 = 0
     end enum
 
     enum, bind(c)
@@ -210,6 +246,8 @@ module cea_bindc
         type(c_ptr) :: reactants = c_null_ptr
         integer(c_int) :: ninsert = 0
         type(c_ptr) :: insert = c_null_ptr
+        logical(c_bool) :: smooth_truncation = .false.
+        real(c_double)  :: truncation_width  = -1.0d0
     end type
 
     !-----------------------------------------------------------------
@@ -236,6 +274,8 @@ contains
         opts%reactants = c_null_ptr
         opts%ninsert = 0
         opts%insert = c_null_ptr
+        opts%smooth_truncation = .false.
+        opts%truncation_width  = -1.0d0
     end function
 
     function cea_species_name_len(name_len) result(ierr) bind(c)
@@ -1374,6 +1414,12 @@ contains
         end if
 
         sptr = c_loc(solver)
+        if (logical(opts%smooth_truncation)) then
+            if (opts%truncation_width == 0.0d0) &
+                error stop 'cea_eqsolver_create_with_options: truncation_width must be > 0 when smooth_truncation is enabled.'
+            solver%smooth_truncation = .true.
+            if (opts%truncation_width > 0.0d0) solver%truncation_width = opts%truncation_width
+        end if
         call log_info('BINDC: Created EqSolver from product mixture with options at '//to_str(sptr))
     end function
 
@@ -1650,6 +1696,12 @@ contains
             end if
         end if
         sptr = c_loc(solver)
+        if (logical(opts%smooth_truncation)) then
+            if (opts%truncation_width == 0.0d0) &
+                error stop 'cea_rocket_solver_create_with_options: truncation_width must be > 0 when smooth_truncation is enabled.'
+            solver%eq_solver%smooth_truncation = .true.
+            if (opts%truncation_width > 0.0d0) solver%eq_solver%truncation_width = opts%truncation_width
+        end if
         call log_info('BINDC: Created RocketSolver with options at '//to_str(sptr))
     end function
 
@@ -2469,6 +2521,12 @@ contains
             end if
         end if
         sptr = c_loc(solver)
+        if (logical(opts%smooth_truncation)) then
+            if (opts%truncation_width == 0.0d0) &
+                error stop 'cea_shock_solver_create_with_options: truncation_width must be > 0 when smooth_truncation is enabled.'
+            solver%eq_solver%smooth_truncation = .true.
+            if (opts%truncation_width > 0.0d0) solver%eq_solver%truncation_width = opts%truncation_width
+        end if
         call log_info('BINDC: Created ShockSolver with options at '//to_str(sptr))
     end function
 
@@ -2724,6 +2782,12 @@ contains
             end if
         end if
         sptr = c_loc(solver)
+        if (logical(opts%smooth_truncation)) then
+            if (opts%truncation_width == 0.0d0) &
+                error stop 'cea_detonation_solver_create_with_options: truncation_width must be > 0 when smooth_truncation is set.'
+            solver%eq_solver%smooth_truncation = .true.
+            if (opts%truncation_width > 0.0d0) solver%eq_solver%truncation_width = opts%truncation_width
+        end if
         call log_info('BINDC: Created DetonSolver with options at '//to_str(sptr))
     end function
 
@@ -2985,6 +3049,351 @@ contains
         deallocate(partials)
         call log_info('BINDC: Destroyed EqPartials object at '//to_str(pptr))
         pptr = c_null_ptr
+    end function
+
+    !-----------------------------------------------------------------
+    ! Equilibrium Derivatives
+    !-----------------------------------------------------------------
+    function cea_eqderivatives_create(dptr, sptr, slptr) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr), intent(out) :: dptr
+        type(c_ptr), intent(in), value  :: sptr
+        type(c_ptr), intent(in), value  :: slptr
+        type(EqDerivatives), pointer :: derivs
+        type(EqSolver), pointer :: solver
+        type(EqSolution), pointer :: solution
+        ierr = CEA_SUCCESS
+        call c_f_pointer(sptr, solver)
+        call c_f_pointer(slptr, solution)
+        allocate(derivs)
+        derivs = EqDerivatives(solver, solution)
+        dptr = c_loc(derivs)
+        call log_info('BINDC: Created EqDerivatives object at '//to_str(dptr))
+    end function
+
+    function cea_eqderivatives_destroy(dptr) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr), intent(inout) :: dptr
+        type(EqDerivatives), pointer :: derivs
+        ierr = CEA_SUCCESS
+        if (.not. c_associated(dptr)) then
+            dptr = c_null_ptr
+            return
+        end if
+        call c_f_pointer(dptr, derivs)
+        if (associated(derivs)) deallocate(derivs)
+        dptr = c_null_ptr
+        call log_info('BINDC: Destroyed EqDerivatives object at '//to_str(dptr))
+    end function
+
+    function cea_eqderivatives_compute_derivatives(dptr, sptr, slptr, check_closure_defect) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr),     intent(in), value :: dptr
+        type(c_ptr),     intent(in), value :: sptr
+        type(c_ptr),     intent(in), value :: slptr
+        logical(c_bool), intent(in), value :: check_closure_defect
+        type(EqDerivatives), pointer :: derivs
+        type(EqSolver), pointer :: solver
+        type(EqSolution), pointer :: solution
+        logical :: check_
+        ierr = CEA_SUCCESS
+        call c_f_pointer(dptr, derivs)
+        call c_f_pointer(sptr, solver)
+        call c_f_pointer(slptr, solution)
+        check_ = .false.
+        if (check_closure_defect .eqv. .true.) check_ = .true.
+        call derivs%compute_derivatives(solver, solution, check_closure_defect=check_)
+        call derivs%unpack_values(solver, solution)
+    end function
+
+    function cea_eqderivatives_compute_fd(dptr, sptr, slptr, h, verbose, central) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr),     intent(in), value :: dptr
+        type(c_ptr),     intent(in), value :: sptr
+        type(c_ptr),     intent(in), value :: slptr
+        real(c_double),  intent(in), value :: h
+        logical(c_bool), intent(in), value :: verbose
+        logical(c_bool), intent(in), value :: central
+        type(EqDerivatives), pointer :: derivs
+        type(EqSolver), pointer :: solver
+        type(EqSolution), pointer :: solution
+        logical :: verbose_, central_
+        ierr = CEA_SUCCESS
+        call c_f_pointer(dptr, derivs)
+        call c_f_pointer(sptr, solver)
+        call c_f_pointer(slptr, solution)
+        verbose_ = .false.
+        if (verbose .eqv. .true.) verbose_ = .true.
+        central_ = .false.
+        if (central .eqv. .true.) central_ = .true.
+        call derivs%compute_fd(solver, solution, h, verbose=verbose_, central=central_)
+    end function
+
+    function cea_eqderivatives_get_scalar(dptr, which, method, value) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr),    intent(in), value :: dptr
+        integer(c_int), intent(in), value :: which
+        integer(c_int), intent(in), value :: method
+        real(c_double), intent(out) :: value
+        type(EqDerivatives), pointer :: derivs
+        logical :: use_fd
+        ierr = CEA_SUCCESS
+        call c_f_pointer(dptr, derivs)
+        use_fd = (method == CEA_DERIV_FD)
+        select case(which)
+            case (CEA_DERIV_DT_DSTATE1)
+                if (use_fd) then
+                    value = derivs%dT_dstate1_fd
+                else
+                    value = derivs%dT_dstate1
+                end if
+            case (CEA_DERIV_DT_DSTATE2)
+                if (use_fd) then
+                    value = derivs%dT_dstate2_fd
+                else
+                    value = derivs%dT_dstate2
+                end if
+            case (CEA_DERIV_DN_DSTATE1)
+                if (use_fd) then
+                    value = derivs%dn_dstate1_fd
+                else
+                    value = derivs%dn_dstate1
+                end if
+            case (CEA_DERIV_DN_DSTATE2)
+                if (use_fd) then
+                    value = derivs%dn_dstate2_fd
+                else
+                    value = derivs%dn_dstate2
+                end if
+            case (CEA_DERIV_DH_DSTATE1)
+                if (use_fd) then
+                    value = derivs%dH_dstate1_fd
+                else
+                    value = derivs%dH_dstate1
+                end if
+            case (CEA_DERIV_DH_DSTATE2)
+                if (use_fd) then
+                    value = derivs%dH_dstate2_fd
+                else
+                    value = derivs%dH_dstate2
+                end if
+            case (CEA_DERIV_DU_DSTATE1)
+                if (use_fd) then
+                    value = derivs%dU_dstate1_fd
+                else
+                    value = derivs%dU_dstate1
+                end if
+            case (CEA_DERIV_DU_DSTATE2)
+                if (use_fd) then
+                    value = derivs%dU_dstate2_fd
+                else
+                    value = derivs%dU_dstate2
+                end if
+            case (CEA_DERIV_DG_DSTATE1)
+                if (use_fd) then
+                    value = derivs%dG_dstate1_fd
+                else
+                    value = derivs%dG_dstate1
+                end if
+            case (CEA_DERIV_DG_DSTATE2)
+                if (use_fd) then
+                    value = derivs%dG_dstate2_fd
+                else
+                    value = derivs%dG_dstate2
+                end if
+            case (CEA_DERIV_DS_DSTATE1)
+                if (use_fd) then
+                    value = derivs%dS_dstate1_fd
+                else
+                    value = derivs%dS_dstate1
+                end if
+            case (CEA_DERIV_DS_DSTATE2)
+                if (use_fd) then
+                    value = derivs%dS_dstate2_fd
+                else
+                    value = derivs%dS_dstate2
+                end if
+            case default
+                value = 0.0d0
+                ierr = CEA_INVALID_PROPERTY_TYPE
+                return
+        end select
+    end function
+
+    function cea_eqderivatives_get_array(dptr, sptr, slptr, which, method, len, out) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr),    intent(in), value :: dptr
+        type(c_ptr),    intent(in), value :: sptr
+        type(c_ptr),    intent(in), value :: slptr
+        integer(c_int), intent(in), value :: which
+        integer(c_int), intent(in), value :: method
+        integer(c_int), intent(in), value :: len
+        real(c_double), intent(out) :: out(*)
+        type(EqDerivatives), pointer :: derivs
+        type(EqSolver), pointer :: solver
+        type(EqSolution), pointer :: solution
+        integer :: ng, nc, nr, ns_created, ns_cur, np
+        integer :: i, idx_c
+        logical :: use_fd
+        ierr = CEA_SUCCESS
+        call c_f_pointer(dptr, derivs)
+        call c_f_pointer(sptr, solver)
+        call c_f_pointer(slptr, solution)
+        use_fd = (method == CEA_DERIV_FD)
+
+        nr = solver%num_reactants
+        ng = solver%num_gas
+        nc = solver%num_condensed
+        np = solver%num_products
+
+        if (size(derivs%dT_dw0) /= nr) then
+            ierr = CEA_INVALID_SIZE
+            return
+        end if
+
+        ns_created = size(derivs%dnj_dstate1)
+        ns_cur = ng + count(solution%is_active)
+        if (ns_created /= ns_cur) then
+            ierr = CEA_INVALID_SIZE
+            return
+        end if
+
+        select case(which)
+            case (CEA_DERIV_DT_DW0)
+                if (len /= nr) then; ierr = CEA_INVALID_SIZE; return; end if
+                if (use_fd) then; out(:nr) = derivs%dT_dw0_fd; else; out(:nr) = derivs%dT_dw0; end if
+            case (CEA_DERIV_DN_DW0)
+                if (len /= nr) then; ierr = CEA_INVALID_SIZE; return; end if
+                if (use_fd) then; out(:nr) = derivs%dn_dw0_fd; else; out(:nr) = derivs%dn_dw0; end if
+            case (CEA_DERIV_DH_DW0)
+                if (len /= nr) then; ierr = CEA_INVALID_SIZE; return; end if
+                if (use_fd) then; out(:nr) = derivs%dH_dw0_fd; else; out(:nr) = derivs%dH_dw0; end if
+            case (CEA_DERIV_DU_DW0)
+                if (len /= nr) then; ierr = CEA_INVALID_SIZE; return; end if
+                if (use_fd) then; out(:nr) = derivs%dU_dw0_fd; else; out(:nr) = derivs%dU_dw0; end if
+            case (CEA_DERIV_DG_DW0)
+                if (len /= nr) then; ierr = CEA_INVALID_SIZE; return; end if
+                if (use_fd) then; out(:nr) = derivs%dG_dw0_fd; else; out(:nr) = derivs%dG_dw0; end if
+            case (CEA_DERIV_DS_DW0)
+                if (len /= nr) then; ierr = CEA_INVALID_SIZE; return; end if
+                if (use_fd) then; out(:nr) = derivs%dS_dw0_fd; else; out(:nr) = derivs%dS_dw0; end if
+            case (CEA_DERIV_DNJ_DSTATE1)
+                if (len /= np) then; ierr = CEA_INVALID_SIZE; return; end if
+                out(:np) = 0.0d0
+                if (use_fd) then
+                    out(:ng) = derivs%dnj_dstate1_fd(:ng)
+                else
+                    out(:ng) = derivs%dnj_dstate1(:ng)
+                end if
+                idx_c = 0
+                do i = 1, nc
+                    if (.not. solution%is_active(i)) cycle
+                    idx_c = idx_c + 1
+                    if (use_fd) then
+                        out(ng+i) = derivs%dnj_dstate1_fd(ng+idx_c)
+                    else
+                        out(ng+i) = derivs%dnj_dstate1(ng+idx_c)
+                    end if
+                end do
+            case (CEA_DERIV_DNJ_DSTATE2)
+                if (len /= np) then; ierr = CEA_INVALID_SIZE; return; end if
+                out(:np) = 0.0d0
+                if (use_fd) then
+                    out(:ng) = derivs%dnj_dstate2_fd(:ng)
+                else
+                    out(:ng) = derivs%dnj_dstate2(:ng)
+                end if
+                idx_c = 0
+                do i = 1, nc
+                    if (.not. solution%is_active(i)) cycle
+                    idx_c = idx_c + 1
+                    if (use_fd) then
+                        out(ng+i) = derivs%dnj_dstate2_fd(ng+idx_c)
+                    else
+                        out(ng+i) = derivs%dnj_dstate2(ng+idx_c)
+                    end if
+                end do
+            case default
+                ierr = CEA_INVALID_PROPERTY_TYPE
+                return
+        end select
+    end function
+
+    function cea_eqderivatives_get_matrix(dptr, sptr, slptr, which, method, rows, cols, out) result(ierr) bind(c)
+        integer(c_int) :: ierr
+        type(c_ptr),    intent(in), value :: dptr
+        type(c_ptr),    intent(in), value :: sptr
+        type(c_ptr),    intent(in), value :: slptr
+        integer(c_int), intent(in), value :: which
+        integer(c_int), intent(in), value :: method
+        integer(c_int), intent(in), value :: rows
+        integer(c_int), intent(in), value :: cols
+        real(c_double), intent(out) :: out(*)
+        type(EqDerivatives), pointer :: derivs
+        type(EqSolver), pointer :: solver
+        type(EqSolution), pointer :: solution
+        integer :: ng, nc, nr, ns_created, ns_cur, np
+        integer :: i, idx_c, r, c, k
+        logical :: use_fd
+        ierr = CEA_SUCCESS
+        call c_f_pointer(dptr, derivs)
+        call c_f_pointer(sptr, solver)
+        call c_f_pointer(slptr, solution)
+        use_fd = (method == CEA_DERIV_FD)
+
+        nr = solver%num_reactants
+        ng = solver%num_gas
+        nc = solver%num_condensed
+        np = solver%num_products
+
+        if (rows /= np .or. cols /= nr) then
+            ierr = CEA_INVALID_SIZE
+            return
+        end if
+
+        if (size(derivs%dT_dw0) /= nr) then
+            ierr = CEA_INVALID_SIZE
+            return
+        end if
+
+        ns_created = size(derivs%dnj_dstate1)
+        ns_cur = ng + count(solution%is_active)
+        if (ns_created /= ns_cur) then
+            ierr = CEA_INVALID_SIZE
+            return
+        end if
+
+        select case(which)
+            case (CEA_DERIV_DNJ_DW0)
+                out(:rows*cols) = 0.0d0
+                do r = 1, ng
+                    do c = 1, nr
+                        k = (r-1)*cols + c
+                        if (use_fd) then
+                            out(k) = derivs%dnj_dw0_fd(r, c)
+                        else
+                            out(k) = derivs%dnj_dw0(r, c)
+                        end if
+                    end do
+                end do
+                idx_c = 0
+                do i = 1, nc
+                    r = ng + i
+                    if (.not. solution%is_active(i)) cycle
+                    idx_c = idx_c + 1
+                    do c = 1, nr
+                        k = (r-1)*cols + c
+                        if (use_fd) then
+                            out(k) = derivs%dnj_dw0_fd(ng+idx_c, c)
+                        else
+                            out(k) = derivs%dnj_dw0(ng+idx_c, c)
+                        end if
+                    end do
+                end do
+            case default
+                ierr = CEA_INVALID_PROPERTY_TYPE
+                return
+        end select
     end function
 
     !-----------------------------------------------------------------

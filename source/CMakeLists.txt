@@ -21,7 +21,7 @@ add_installed_library(cea_core
     transport.f90
     units.f90
 )
-# Call function to correctly process compiler flags to check Fortran 
+# Call function to correctly process compiler flags to check Fortran
 # standard compliance based on compiler / OS
 set(CMAKE_Fortran_STANDARD 2008)
 set(CMAKE_Fortran_STANDARD_REQUIRED ON)
