@@ -32,6 +32,7 @@ typedef double *cea_array;
 
 // somehow the intel fortran binding header defines CFI_CDESC_T incorrectly
 // so we need to undef it and define it ourselves
+#ifdef __INTEL_LLVM_COMPILER
 #undef CFI_CDESC_T
 #define CFI_CDESC_T(r)                                                         \
   struct {                                                                     \
@@ -43,6 +44,23 @@ typedef double *cea_array;
     size_t reserved2;                                                          \
     CFI_dim_t dim[r];                                                          \
   }
+#else
+typedef struct CFI_dim_t_MOD {
+  CFI_index_t sm;
+  CFI_index_t lower_bound;
+  CFI_index_t extent;
+} CFI_dim_t_MOD;
+#undef CFI_CDESC_T
+#define CFI_CDESC_T(r)                                                         \
+  struct {                                                                     \
+    void *base_addr;                                                           \
+    size_t reserved1;                                                          \
+    size_t elem_len;                                                           \
+    size_t flags;                                                              \
+    size_t reserved2;                                                          \
+    CFI_dim_t_MOD dim[r];                                                      \
+  }
+#endif
 
 struct cea_formula_t {
   CFI_CDESC_T(1) elements;
